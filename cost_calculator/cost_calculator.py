@@ -1,8 +1,6 @@
 __author__ = 'Olivier Van Cutsem'
 
-from tariff_structure import *
 from rate_structure import *
-import json
 from dateutil.relativedelta import relativedelta
 
 
@@ -125,7 +123,7 @@ class CostCalculator(object):
          - A coefficient for the power demand over the period
 
         :param range_date: a tuple (t_start, t_end) of type 'datetime', storing the timestamp
-        :param timestep: an item in TODO, representing the sampling period of the desired output timeseries
+        :param timestep: an element of TariffElemPeriod (1h, 30min or 15min), representing the sampling period
 
         :return: a dictionnary formatted as following:
         {
