@@ -1,13 +1,21 @@
 __author__ = 'Olivier Van Cutsem'
 
 from abc import abstractmethod
-import pandas as pd
 from enum import Enum
 from datetime import datetime
 import calendar
-import numpy as np
 
 # --------------- TARIFF structures --------------- #
+
+
+class TariffType(Enum):
+    FIX_CUSTOM_CHARGE = 'customer_fix_charge',
+    ENERGY_CUSTOM_CHARGE = 'customer_energy_charge',
+    DEMAND_CUSTOM_CHARGE_SEASON = 'customer_demand_charge_season',
+    DEMAND_CUSTOM_CHARGE_TOU = 'customer_demand_charge_tou',
+    FIX_DREVENT_CHARGE = 'dr_event_fix_charge',
+    ENERGY_DREVENT_CHARGE = 'dr_event_energy_charge',
+    DEMAND_DREVENT_CHARGE = 'dr_event_demand_charge',
 
 
 class TariffElemPeriod(Enum):
