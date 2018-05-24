@@ -11,13 +11,14 @@ from openei_tariff.openei_tariff_analyzer import *
 
 # TODO: read this from a CSV ...
 map_site_to_tariff = {
-    'd3489cfa-93a5-37e7-a274-0f35cf17b782':  # TODO: write the name of the site here
+    '4c95836f-6bdb-3adc-ac5e-4c787ae027c7':  # Orinda Library
     OpenEI_tariff(utility_id='14328',
                   sector='Commercial',
                   tariff_rate_of_interest='A-10',
                   distrib_level_of_interest='Secondary',
-                  tou=True)
+                  tou=False)
 }
+
 # useful functions
 def print_json(json_dict):
     print json.dumps(json_dict, indent=2, sort_keys=True)
@@ -28,6 +29,9 @@ if __name__ == '__main__':
 
     print("--- Loading meter data ...")
 
+    meter_uuid = 'd3489cfa-93a5-37e7-a274-0f35cf17b782'
+    print("Data from GreenButton meter uuid '{0}'".format(meter_uuid))
+
     df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
     df.index.name = 'Time'
     df.index = df.index.map(pd.to_datetime)
@@ -35,7 +39,6 @@ if __name__ == '__main__':
     df["date"] = df.index.date
     df["time"] = df.index.hour
 
-    meter_uuid = 'd3489cfa-93a5-37e7-a274-0f35cf17b782'
     data_meter = df[meter_uuid]
 
     # Specify the Utility tariff we're going to analyze
