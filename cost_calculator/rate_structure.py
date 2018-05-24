@@ -3,6 +3,8 @@ __author__ = 'Olivier Van Cutsem'
 from enum import Enum
 from datetime import datetime
 
+import holidays
+
 # --------------- Schedule structures --------------- #
 
 
@@ -122,7 +124,7 @@ class TouRateSchedule:
             date_struct = date
 
         m_date = date_struct.month
-        d_date = date_struct.weekday()
+        d_date = self.get_day_in_the_week(date_struct)
 
         rate_struct = self.get_rate(m_date, d_date)
 
@@ -132,6 +134,14 @@ class TouRateSchedule:
             return rate_struct
 
     # --- private
+    @staticmethod
+    def get_day_in_the_week(date_sel):
+
+        if date_sel in holidays.US(state='CA', years=date_sel.year):
+            return 0  # Hardcoded: holidays are like Sundays ...
+        else:
+            return date_sel.weekday()
+
     def get_rate_in_day(self, rate_struct, time_select):
         """
         Return the rate in 'rate_struct' corresponding to instant "time_select"
