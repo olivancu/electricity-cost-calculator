@@ -118,7 +118,7 @@ class TouRateSchedule:
         :return: a list in float
         """
 
-        if type(date) is float or  type(date) is int:
+        if type(date) is float or type(date) is int:
             date_struct = datetime.fromtimestamp(date)
         else:
             date_struct = date
@@ -128,8 +128,8 @@ class TouRateSchedule:
 
         rate_struct = self.get_rate(m_date, d_date)
 
-        if type(rate_struct) is not list:
-            return [rate_struct]
+        if type(rate_struct) is not list:  # hourly flat rate
+            return 24 * [rate_struct]
         else:
             return rate_struct
 
@@ -174,6 +174,19 @@ class TouRateSchedule:
                 for d_lab, d_data in m_data[self.DAILY_RATE_KEY].items():
                     if d_date in d_data[self.DAYSLIST_KEY]:
                         return d_data[self.RATES_KEY]
+
+    @property
+    def periods_in_day(self):
+        """
+        TODO
+        :return:
+        """
+
+        # take a random day and check the vector length
+        random_day = datetime(2000, 1, 1, hour=0, minute=0, second=0)  # the year doesn't matter
+        vector_data = self.get_daily_rate(random_day)
+
+        return len(vector_data)
 
     @property
     def main_structure(self):

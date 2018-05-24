@@ -63,13 +63,13 @@ if __name__ == '__main__':
 
     # 1) Get the bill over the period
 
-    print_json(bill_calc.compute_bill(data_meter))
+    #print_json(bill_calc.compute_bill(data_meter))
 
     # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
 
     start_date_price = datetime(2017, 1, 7, hour=0, minute=0, second=0)
     end_date_price = datetime(2017, 1, 7, hour=23, minute=59, second=59)
-    range_date = (start_date_price, end_date_price)
 
     timestep = TariffElemPeriod.HOURLY  # We want a 1h period
-    print bill_calc.get_electricity_price(range_date, timestep)
+
+    print bill_calc.get_electricity_price((start_date_price, end_date_price), timestep)

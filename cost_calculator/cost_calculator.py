@@ -1,8 +1,11 @@
 __author__ = 'Olivier Van Cutsem'
 
 from rate_structure import *
-from tariff_structure import TariffType
+from tariff_structure import TariffType, TariffElemPeriod
 from dateutil.relativedelta import relativedelta
+import time
+import pandas as pd
+import calendar
 
 
 class CostCalculator(object):
@@ -109,9 +112,87 @@ class CostCalculator(object):
             - "demand": the corresponding demand coefficient (in $/kW), assuming the maximum occurs during that period
         """
 
-        pass
+        # Prepare the Pandas dataframe
+        (start_date_price, end_date_price) = range_date
+        date_list = pd.date_range(start=start_date_price, end=end_date_price, freq=str(timestep.value[0]))
 
-    # --- Construction methods
+        # Populate the dataframe for each label, for each period
+        ret_df = None
+        for label_tariff in self.__tariffstructures.keys():
+            df_for_label = self.get_price_in_range(label_tariff, range_date, timestep)
+
+            if ret_df is None:
+                ret_df = df_for_label
+            else:
+                ret_df = pd.concat([ret_df, df_for_label], axis=1)
+
+        return ret_df
+
+    def get_price_in_range(self, label_tariff, date_range, timestep):
+        """
+        TODO
+        remark: doesn't work with timestep > 1h ..
+        """
+
+        # TODO: this is not optimal but code-wise it's easier to write.. and there must be a way to do it with a MAP
+
+        # Prepare the Pandas dataframe
+        (start_date_price, end_date_price) = date_range
+        date_range = pd.date_range(start=start_date_price, end=end_date_price, freq=str(timestep.value[0]))
+        ret_df = pd.DataFrame(index=date_range, columns=[label_tariff])
+
+        # Select the corresponding blocks
+
+        # Get the price for the period
+        for date, row in ret_df.iterrows():
+            date_range_period = pd.date_range(start=date, periods=2, freq=date.freq)
+            tariff_block = self.get_tariff_struct(label_tariff, (date_range_period[0], date_range_period[1]))
+
+            if len(tariff_block) == 0:
+                continue
+
+            tariff_block = tariff_block[0]
+
+            price_for_this_period = tariff_block.get_price_from_timestamp(date)
+
+            # TODO: map instead of ifs ..
+
+            # Compute ratio to scale wrt 1h
+
+            ratio_sel_timestep = 4.0  # supposed to be 15 min
+
+            if timestep == TariffElemPeriod.HALFLY:
+                ratio_sel_timestep = 2.0
+            elif timestep == TariffElemPeriod.HOURLY:
+                ratio_sel_timestep = 1.0
+
+            tariff_metric_period = tariff_block.period_metric()
+
+            ratio_tariff_timestep = 4.0  # supposed to be 15 min
+
+            if tariff_metric_period == TariffElemPeriod.HALFLY:
+                ratio_tariff_timestep = 2.0
+            elif tariff_metric_period == TariffElemPeriod.HOURLY:
+                ratio_tariff_timestep = 1.0
+            elif tariff_metric_period == TariffElemPeriod.DAILY:
+                ratio_tariff_timestep = 1/24.0
+            elif tariff_metric_period == TariffElemPeriod.MONTHLY:
+                nb_days_in_this_month = calendar.monthrange(date.year, date.month)[1]
+                ratio_tariff_timestep = 1/24.0 * 1/nb_days_in_this_month
+
+            print("ratio_tariff_timestep: ")
+            print(ratio_tariff_timestep)
+
+            print("ratio_sel_timestep: ")
+            print(ratio_sel_timestep)
+
+            price_scaled = price_for_this_period / ratio_sel_timestep * ratio_tariff_timestep
+
+            ret_df.loc[date, label_tariff] = price_scaled
+
+        return ret_df
+
+    # --- Construction and internal methods
 
     def add_tariff(self, tariff_obj, tariff_label, tariff_type=None):
         """

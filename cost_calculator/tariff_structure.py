@@ -131,6 +131,14 @@ class TariffBase(object):
 
         return self.__enddate
 
+    @abstractmethod
+    def period_metric(self):
+        pass
+
+    @abstractmethod
+    def get_price_from_timestamp(self, timestamp):
+        pass
+
 
 # --------------- FIXED TARIFF --------------- #
 
@@ -173,6 +181,11 @@ class FixedTariff(TariffBase):
 
         return nb_days, bill
 
+    def period_metric(self):
+        return self.__rate_period
+
+    def get_price_from_timestamp(self, timestamp):
+        return self.__rate_value
 
 # --------------- TOU TARIFFs --------------- #
 
@@ -211,6 +224,23 @@ class TimeOfUseTariff(TariffBase):
     @property
     def unit_metric(self):
         return self.__unit_metric
+
+    def period_metric(self):
+        # TODO: replace ifs by map
+        nb_periods_in_day = self.__schedule.periods_in_day
+
+        if nb_periods_in_day == 24:
+            return TariffElemPeriod.HOURLY
+        elif nb_periods_in_day == 24 * 2:
+            return TariffElemPeriod.HALFLY
+        elif nb_periods_in_day == 24 * 4:
+            return TariffElemPeriod.QUARTERLY
+        else:
+            return TariffElemPeriod.DAILY
+
+    def get_price_from_timestamp(self, timestamp):
+        # TODO: scale with the unit
+        return self.__schedule.get_from_timestamp(timestamp)
 
 
 class TouDemandChargeTariff(TimeOfUseTariff):
