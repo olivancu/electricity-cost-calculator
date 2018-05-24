@@ -153,7 +153,7 @@ def get_rate_obj_from_openei(open_ei_block, select_rate):
                                                       TouRateSchedule.DAILY_RATE_KEY: {
                                                           'allweek': {
                                                               TouRateSchedule.DAYSLIST_KEY: range(7),
-                                                              TouRateSchedule.RATES_KEY: dem_rate_list[rate_idx][0]['rate']
+                                                              TouRateSchedule.RATES_KEY: 24 * [dem_rate_list[rate_idx][0]['rate']]
                                                           }
                                                         }
                                                       }

@@ -115,7 +115,7 @@ class TouRateSchedule:
         """
         Return the daily rates, as a vector sampled at a given period
         :param date: a float, the timestamp
-        :return: a list in float
+        :return: a list of float
         """
 
         if type(date) is float or type(date) is int:
@@ -129,7 +129,7 @@ class TouRateSchedule:
         rate_struct = self.get_rate(m_date, d_date)
 
         if type(rate_struct) is not list:  # hourly flat rate
-            return 24 * [rate_struct]
+            return [rate_struct]
         else:
             return rate_struct
 
