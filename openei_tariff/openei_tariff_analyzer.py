@@ -59,7 +59,9 @@ class OpenEI_tariff(object):
         data_filtered = [v for v in data_filtered if self.distrib_level_of_interest in v['name']]
         if self.tou:
             data_filtered = [v for v in data_filtered if 'TOU' in v['name']]
-        # print_json(data_filtered)  # TEST PURPOSE
+        else:
+            data_filtered = [v for v in data_filtered if 'TOU' not in v['name']]
+        
 
         # Make sure we work with integer timestamps
         for rate_data in data_filtered:
