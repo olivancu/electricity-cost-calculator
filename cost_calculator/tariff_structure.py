@@ -24,7 +24,7 @@ class TariffElemPeriod(Enum):
     DAILY = 'D',
     HOURLY = '1h',
     HALFLY = '30min',
-    QUARTERLY = '15min'
+    QUARTERLY = '15min',
 
 
 class TariffElemMetricUnit(Enum):

@@ -21,7 +21,7 @@ class OpenEI_tariff(object):
     LIMIT = '500'
     ORDER_BY_SORT = 'startdate'
 
-    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', tou=False):
+    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single Phas', tou=False):
 
         self.req_param = {}
 
@@ -41,6 +41,7 @@ class OpenEI_tariff(object):
         # Post-req filter
         self.tariff_rate_of_interest = tariff_rate_of_interest
         self.distrib_level_of_interest = distrib_level_of_interest
+        self.phase_wing = phasewing
         self.tou = tou
 
         # The raw filtered answer from an API call
@@ -84,16 +85,16 @@ class OpenEI_tariff(object):
             # Replace END time of the current elem by the START time of the next one if necessary
             data_cur['enddate'] = min(data_next['startdate'], data_cur['enddate'])
 
-        print "{0} blocks of TOU data, ready to be used !".format(len(data_filtered))
-
         # Store internally the filtered result
         self.data_openei = data_filtered
 
 
 def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
     """
-    From a set of blocks coming from the OpenEI API, merge the block and extract the useful info
-    :return: a formatted structure as explained above
+    Analyze the content of an OpenEI request in order to fill a CostCalculator object
+    :param openei_tarif_obj: an instance of OpenEI_tariff that already call the API
+    :param bill_calculator: an (empty) instance of CostCalculator
+    :return: /
     """
 
     tariff_struct = {}
@@ -123,7 +124,18 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
 
         bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_energy_obj), str(TariffType.ENERGY_CUSTOM_CHARGE.value[0]))
 
-    return tariff_struct
+    # Other useful information, beside the tariff
+    # Loop over all the blocks to be sure, maybe such fields are missing in some ..
+    for block_rate in openei_tarif_obj.data_openei:
+        if 'peakkwcapacitymax' in block_rate.keys():
+            bill_calculator.tariff_max_kw = block_rate['peakkwcapacitymax']
+        if 'peakkwcapacitymin' in block_rate.keys():
+            bill_calculator.tariff_min_kw = block_rate['peakkwcapacitymin']
+
+        if 'peakkwhusagemax' in block_rate.keys():
+            bill_calculator.tariff_max_kwh = block_rate['peakkwhusagemax']
+        if 'peakkwhusagemin' in block_rate.keys():
+            bill_calculator.tariff_min_kwh = block_rate['peakkwhusagemin']
 
 
 def get_rate_obj_from_openei(open_ei_block, select_rate):

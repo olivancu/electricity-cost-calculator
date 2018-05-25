@@ -47,11 +47,20 @@ class CostCalculator(object):
         self.__tariffstructures = {}
 
         if type_tariffs_map is None:  # The "basic" tariff types as the default ones
-            type_tariffs_map = self.DEFAULT_TARIFF_MAP
+            self.type_tariffs_map = self.DEFAULT_TARIFF_MAP
+        else:
+            self.type_tariffs_map = type_tariffs_map
 
         # Initialize the list of "tariff blocks"
-        for label, type_tariff in type_tariffs_map.items():
+        for label, type_tariff in self.type_tariffs_map.items():
             self.__tariffstructures[label] = self.generate_type_tariff(type_tariff)
+
+        # Useful data about the tariff
+        self.tariff_min_kw = 0  # The minimum peak demand to stay in this tariff
+        self.tariff_max_kw = float('inf')  # The maximum peak demand to stay in this tariff
+
+        self.tariff_min_kwh = 0  # The minimum energy demand to stay in this tariff
+        self.tariff_max_kwh = float('inf')  # The maximum energy demand to stay in this tariff
 
     # --- Useful methods
 
@@ -106,10 +115,10 @@ class CostCalculator(object):
         :param timestep: an element of TariffElemPeriod enumeration (1h, 30min or 15min), representing the sampling
         period
 
-        :return: a pandas dataframe whose index is a datetime index and containing 3 cols:
-            - "fix": the corresponding fixed charged (in $)
-            - "energy": the corresponding energy coefficient (in $/kWh),
-            - "demand": the corresponding demand coefficient (in $/kW), assuming the maximum occurs during that period
+        :return: a tuple (pd_prices, map_prices) containing:
+            - pd_prices: a pandas dataframe whose index is a datetime index and containing as many cols as there are
+        type_tariffs_map elements, i.e. the same keys as in __tariffstructures
+            - map_prices: a mapping between the cols label and the type of tariff (fix, energy or demand)
         """
 
         # Prepare the Pandas dataframe
@@ -126,7 +135,7 @@ class CostCalculator(object):
             else:
                 ret_df = pd.concat([ret_df, df_for_label], axis=1)
 
-        return ret_df
+        return ret_df, self.type_tariffs_map
 
     def get_price_in_range(self, label_tariff, date_range, timestep):
         """
@@ -180,17 +189,45 @@ class CostCalculator(object):
                 nb_days_in_this_month = calendar.monthrange(date.year, date.month)[1]
                 ratio_tariff_timestep = 1/24.0 * 1/nb_days_in_this_month
 
-            print("ratio_tariff_timestep: ")
-            print(ratio_tariff_timestep)
-
-            print("ratio_sel_timestep: ")
-            print(ratio_sel_timestep)
-
             price_scaled = price_for_this_period / ratio_sel_timestep * ratio_tariff_timestep
 
             ret_df.loc[date, label_tariff] = price_scaled
 
         return ret_df
+
+    def print_bill(self, bill_struct, monthly_detailed=True):
+
+        # Aggregation of all the months
+
+        acc_tot = 0.0
+        acc_per_chargetype = {ChargeType.FIXED: 0.0, ChargeType.ENERGY: 0.0, ChargeType.DEMAND: 0.0}
+        acc_per_label = {}
+        for k in self.type_tariffs_map.keys():
+            acc_per_label[k] = 0.0
+
+        for m_key, bill_per_label in bill_struct.items():
+            for lab_tariff, data in bill_per_label.items():
+                acc_tot += data[1]  # second item in data is in dollar
+                acc_per_chargetype[self.type_tariffs_map[lab_tariff]] += data[1]
+                acc_per_label[lab_tariff] += data[1]
+
+        # Total
+        print("\n| Aggregated bill: {0} ($)".format(acc_tot))
+
+        # Per type
+        print("\n| Total bill per type of charge:")
+        for t_key, v in acc_per_chargetype.items():
+            print(" - Charge type '{0}': {1} ($)".format(str(t_key.value[0]), v))
+
+        # Per label
+        print("\n| Total bill per type or tariff:")
+        for l_key, v in acc_per_label.items():
+            print(" - Type '{0}': {1} ($)".format(str(l_key), v))
+
+        if not monthly_detailed:
+            return
+
+        # Monthly detail
 
     # --- Construction and internal methods
 

@@ -11,7 +11,7 @@ import holidays
 class ChargeType(Enum):
     FIXED = 'fix',
     DEMAND = 'demand',
-    ENERGY = 'energy'
+    ENERGY = 'energy',
 
 
 class BlockRate:
