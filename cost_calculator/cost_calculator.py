@@ -64,7 +64,7 @@ class CostCalculator(object):
 
     # --- Useful methods
 
-    def compute_bill(self, df):
+    def compute_bill(self, df, billing_periods=None):
         """
         Return the bill corresponding to the energy data in a data frame:
 
@@ -80,20 +80,31 @@ class CostCalculator(object):
 
 
         :param df: a pandas dataframe containing power consumption (in W)
+        :param billing_periods: a dictionary containing the billing periods:
+            {
+                "label_month" : [start_data1, start_data2],
+                ...
+            }
+            If None, the billing periods are taken as the entire months of the calendar
         :return: a dictionary representing the bill as described above
-        --> TODO: should it return a pandas dataframe instead ?
         """
 
         ret = {}
 
         # Initialize the returned structure
-        t_s = df.index[0]
-        t_i = datetime(t_s.year, t_s.month, 1)
-        while t_i <= df.index[-1]:
-            ret[t_i.strftime("%Y-%m")] = {}
-            for k in self.__tariffstructures.keys():
-                ret[t_i.strftime("%Y-%m")][k] = (0, 0)
-            t_i += relativedelta(months=+1)
+        if billing_periods is None:  # No billing period specified: take the natural months
+            t_s = df.index[0]
+            t_i = datetime(t_s.year, t_s.month, 1)
+            while t_i <= df.index[-1]:
+                ret[t_i.strftime("%Y-%m")] = {}
+                for k in self.__tariffstructures.keys():
+                    ret[t_i.strftime("%Y-%m")][k] = (0, 0)
+                t_i += relativedelta(months=+1)
+        else:  # Billing periods have been specified
+            for k in billing_periods.keys():
+                ret[k] = {}
+                for l in self.__tariffstructures.keys():
+                    ret[k][l] = (0, 0)
 
         # Compute the bill for each of the tariff type, for each month
         for label, tariff_data in self.__tariffstructures.items():
@@ -197,7 +208,23 @@ class CostCalculator(object):
 
     def print_bill(self, bill_struct, monthly_detailed=True):
 
-        # Aggregation of all the months
+        # TODO: Temporary solution for merging 2 months data !
+        data_merge = None
+        for m, data_per_label in bill_struct.items():
+            if data_merge is None:
+                data_merge = data_per_label
+            else:
+                for label_tariff, data_tariff in data_per_label.items():
+                    if self.type_tariffs_map[label_tariff] == ChargeType.DEMAND:  # take max
+                        if data_tariff[0] > data_merge[label_tariff][0]:
+                            data_merge[label_tariff] = data_tariff
+                    else:  # sum
+                        data_merge[label_tariff] = (data_merge[label_tariff][0] + data_tariff[0],
+                                                    data_merge[label_tariff][1] + data_tariff[1])
+
+        bill_struct = {"Monthly bill": data_merge}
+
+                        # Aggregation of all the months
 
         acc_tot = 0.0
         acc_per_chargetype = {ChargeType.FIXED: 0.0, ChargeType.ENERGY: 0.0, ChargeType.DEMAND: 0.0}
