@@ -67,9 +67,10 @@ if __name__ == '__main__':
     print(" - Valid if peak demand is between {0} kW and {1} kW".format(bill_calc.tariff_min_kw, bill_calc.tariff_max_kw))
     print(" - Valid if energy demand is between {0} kWh and {1} kWh".format(bill_calc.tariff_min_kwh, bill_calc.tariff_max_kwh))
     print(" ----------------------")
+
     # BILLING PERIOD
     start_date_bill = datetime(2017, 7, 23, hour=0, minute=0, second=0)
-    end_date_bill = datetime(2017, 8, 22, hour=23, minute=59, second=59)
+    end_date_bill = datetime(2017, 8, 21, hour=23, minute=59, second=59)
 
     mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
     data_meter = data_meter.loc[mask]
@@ -77,14 +78,12 @@ if __name__ == '__main__':
     # 1) Get the bill over the period
     print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
     bill = bill_calc.compute_bill(data_meter)
-    print_json(bill)
-    bill_calc.print_bill(bill)
+    t, tt, ttt = bill_calc.print_aggregated_bill(bill)
 
     # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
 
-    start_date_price = datetime(2017, 1, 7, hour=0, minute=0, second=0)
-    end_date_price = datetime(2017, 1, 7, hour=23, minute=59, second=59)
 
     timestep = TariffElemPeriod.HOURLY  # We want a 1h period
 
-    #print bill_calc.get_electricity_price((start_date_price, end_date_price), timestep)
+    price_elec, map =  bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
+    print price_elec.loc[:, 'customer_energy_charge']

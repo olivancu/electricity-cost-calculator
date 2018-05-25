@@ -55,17 +55,20 @@ class TariffBase(object):
         self.name = name
         self.unit_cost = unit_cost
 
-    def compute_bill(self, df, param=None):
+    def compute_bill(self, df):
         """
-        Compute the bill due to the power/energy consumption in df
+        Compute the bill due to the power/energy consumption in df, for each billing period specified in billing_periods
+
         It outputs a dictionary formatted as follow:
         {
-            "%Y-%m": (float, float),     -> the monthly 'metric' and its cost
+            "bill_period_label1": (float, float),     -> the monthly 'metric' and its cost
             ...
         }
-        :param df: a pandas dataframe
-        :param param: an additional set of parameters
-        :return: a dict formatted as in the method signature
+
+        :param df: a pandas dataframe containing power consumption timeseries
+        :param billing_periods: a dictionary mapping the billing periods label to a tuple (t_start, t_end) of datetime,
+        defining the period related to the billing label
+        :return: a dictionary formatted as in this method signature
         """
 
         ret = {}
@@ -84,7 +87,7 @@ class TariffBase(object):
         while t_s <= t_e:
             mask = (df.index >= t_s) & (df.index <= t_e)
             df_month = df.loc[mask]
-            monthly_bill = self.compute_monthly_bill(df_month, param)
+            monthly_bill = self.compute_monthly_bill(df_month)
             ret[t_s.strftime("%Y-%m")] = monthly_bill
 
             # Prepare the next billing month
@@ -103,7 +106,7 @@ class TariffBase(object):
         return ret
 
     @abstractmethod
-    def compute_monthly_bill(self, df, param=None):
+    def compute_monthly_bill(self, df):
         """
         Compute the monthly bill due to the power/energy consumption in df
         :param df: a pandas dataframe
@@ -161,7 +164,7 @@ class FixedTariff(TariffBase):
         self.__rate_period = bill_period
         self.__rate_value = rate_value
 
-    def compute_monthly_bill(self, df, param=None):
+    def compute_monthly_bill(self, df):
         """
         Compute the monthly bill due to a fixed periodic cost
 
@@ -210,7 +213,7 @@ class TimeOfUseTariff(TariffBase):
         self.__unit_metric = unit_metric
 
     @abstractmethod
-    def compute_monthly_bill(self, df, param=None):
+    def compute_monthly_bill(self, df):
         """
         idem super
         """
@@ -259,7 +262,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
 
         super(TouDemandChargeTariff, self).__init__(dates, time_schedule, unit_metric, unit_cost, name)
 
-    def compute_monthly_bill(self, df, param=None):
+    def compute_monthly_bill(self, df):
         """
         Compute the bill due to a TOU tariff
         :param df: a pandas dataframe
@@ -296,7 +299,7 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
 
         super(TouEnergyChargeTariff, self).__init__(dates, time_schedule, unit_metric, unit_cost, name)
 
-    def compute_monthly_bill(self, df, param=None):
+    def compute_monthly_bill(self, df):
         """
         Compute the bill due to a TOU tariff
         :param df: a pandas dataframe
@@ -339,7 +342,6 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
             energy += sum(df_day[:]) / mult_energy_unit
 
             # Cumulate the bill over the month
-
             cost += sum(mult_cost_unit * df_day.multiply(daily_rate[int(first_idx):int(last_idx)+1])) / mult_energy_unit
 
         return energy, cost
