@@ -16,6 +16,7 @@ map_site_to_tariff = {
                   sector='Commercial',
                   tariff_rate_of_interest='A-10',
                   distrib_level_of_interest='Secondary',
+                  phasewing='Single Phase',
                   tou=False)
 }
 
@@ -29,7 +30,7 @@ if __name__ == '__main__':
 
     print("--- Loading meter data ...")
 
-    meter_uuid = 'd3489cfa-93a5-37e7-a274-0f35cf17b782'
+    meter_uuid = '4c95836f-6bdb-3adc-ac5e-4c787ae027c7'
     print("Data from GreenButton meter uuid '{0}'".format(meter_uuid))
 
     df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
@@ -53,20 +54,31 @@ if __name__ == '__main__':
 
     # Load the tariff information and fill the object
 
-    tariff_struct = tariff_struct_from_openei_data(tariff_openei_data, bill_calc)  # This analyses the raw data from the openEI request and populate the "CostCalculator" object
+    tariff_struct_from_openei_data(tariff_openei_data, bill_calc)  # This analyses the raw data from the openEI request and populate the "CostCalculator" object
 
-    # Load the energy consumption vector
+    # Useful information of the Tariff
+    print("Tariff {0} of utility #{1} (TOU {2}, Grid level {3}, Phase-wing {4})".format(tariff_openei_data.tariff_rate_of_interest,
+                                                                                        tariff_openei_data.req_param['eia'],
+                                                                                        tariff_openei_data.tou,
+                                                                                        tariff_openei_data.distrib_level_of_interest,
+                                                                                        tariff_openei_data.phase_wing))
 
+    print(" - Found {0} tariff blocks from OpenEI".format(len(bill_calc.get_tariff_struct(label_tariff=str(TariffType.ENERGY_CUSTOM_CHARGE.value[0])))))
+    print(" - Valid if peak demand is between {0} kW and {1} kW".format(bill_calc.tariff_min_kw, bill_calc.tariff_max_kw))
+    print(" - Valid if energy demand is between {0} kWh and {1} kWh".format(bill_calc.tariff_min_kwh, bill_calc.tariff_max_kwh))
+    print(" ----------------------")
     # BILLING PERIOD
-    start_date_bill = datetime(2017, 1, 1, hour=0, minute=0, second=0)
-    end_date_bill = datetime(2017, 3, 31, hour=23, minute=59, second=59)
+    start_date_bill = datetime(2017, 7, 23, hour=0, minute=0, second=0)
+    end_date_bill = datetime(2017, 8, 22, hour=23, minute=59, second=59)
 
     mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
     data_meter = data_meter.loc[mask]
 
     # 1) Get the bill over the period
-
-    #print_json(bill_calc.compute_bill(data_meter))
+    print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
+    bill = bill_calc.compute_bill(data_meter)
+    print_json(bill)
+    bill_calc.print_bill(bill)
 
     # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
 
@@ -75,4 +87,4 @@ if __name__ == '__main__':
 
     timestep = TariffElemPeriod.HOURLY  # We want a 1h period
 
-    print bill_calc.get_electricity_price((start_date_price, end_date_price), timestep)
+    #print bill_calc.get_electricity_price((start_date_price, end_date_price), timestep)
