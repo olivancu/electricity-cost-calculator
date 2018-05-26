@@ -4,6 +4,7 @@ from abc import abstractmethod
 from enum import Enum
 from datetime import datetime
 import calendar
+import pandas as pd
 
 # --------------- TARIFF structures --------------- #
 
@@ -61,7 +62,7 @@ class TariffBase(object):
 
         It outputs a dictionary formatted as follow:
         {
-            "bill_period_label1": (float, float),     -> the monthly 'metric' and its cost
+            "bill_period_label1": (float or dict, float),     -> the monthly 'metric' and its cost
             ...
         }
 
@@ -190,6 +191,8 @@ class FixedTariff(TariffBase):
     def get_price_from_timestamp(self, timestamp):
         return self.__rate_value
 
+# TODO: float demand class
+
 # --------------- TOU TARIFFs --------------- #
 
 
@@ -266,22 +269,63 @@ class TouDemandChargeTariff(TimeOfUseTariff):
         """
         Compute the bill due to a TOU tariff
         :param df: a pandas dataframe
-        :return: a tuple (float, float) -> (cost, max_power)
+        :return: a tuple (dict, float) -> ({p1: (max_power_p1, time_max_p1), p2: (max_power_p2, time_max_p2), cost)
         """
-
-        # TODO check the period of the data ! It has been assumed that mean(P_per) = E_per
-
-        date_max = df.idxmax()
-        price_max = self.rate_schedule.get_from_timestamp(date_max)
 
         # Scaling the power unit and cost
         metric_unit_mult = float(self.unit_metric.value[0])
         metric_price_mult = float(self.unit_cost.value[0])
 
-        p_max = max(df[:]) / metric_unit_mult
-        cost = (metric_price_mult * price_max) * p_max
+        # TODO check the period of the data ! It has been assumed that mean(P_per) = E_per
+        # The logic is to get the TOU demand price and split it in different periods, according to the price values
+        set_of_monthly_prices = set()
+        max_per_set = {}
 
-        return p_max, cost
+        for idx, df_day in df.groupby(df.index.date):
+
+            daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
+
+            set_of_daily_prices = set(daily_rate)
+            for p in set_of_daily_prices:
+                if p > 0 and p not in set_of_monthly_prices:  # A new price that hasn't yet been seen
+                    set_of_monthly_prices.add(p)
+                    max_per_set[p] = (0, 0)
+
+            # Constructing the dataframe for an easier manipulation of time
+            period_rate = len(daily_rate) / 24.0
+
+            # TODO: remove if's ...
+            freq_per = '1h'
+            if period_rate == 1: # 1 hour
+                freq_per = '1h'
+            elif period_rate == 2:
+                freq_per = '30min'
+            elif period_rate == 4:
+                freq_per = '15min'
+
+            # The first day may be incomplete
+            first_idx = (df_day.index[0].hour + df_day.index[0].minute/60.0) * period_rate
+
+            # The last day may be incomplete
+            last_idx = (df_day.index[-1].hour + df_day.index[-1].minute/60.0) * period_rate
+
+            data = {'date': df_day.asfreq(freq=freq_per).index, 'price': daily_rate[int(first_idx):int(last_idx)+1]}
+
+            df_prices = pd.DataFrame(data=data)
+
+            for p in set_of_daily_prices:
+
+                # select the indexes for this price
+                mask_price = df_prices[df_prices['price'] == p].index
+                date_max_period = df[mask_price].idxmax()
+                max_power_period = df[date_max_period]
+                if max_power_period > max_per_set[p][0]:
+                    max_per_set[p] = (max_power_period / metric_unit_mult, date_max_period.to_pydatetime())
+
+        # Sum costs per periods
+        cost_tot = metric_price_mult * sum([p * v[0] for p, v in max_per_set.items()])
+
+        return max_per_set, cost_tot
 
 
 class TouEnergyChargeTariff(TimeOfUseTariff):

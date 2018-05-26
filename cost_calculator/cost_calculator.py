@@ -340,6 +340,10 @@ class CostCalculator(object):
             else:
                 for label_tariff, data_tariff in data_per_label.items():
                     if self.type_tariffs_map[label_tariff] == ChargeType.DEMAND:  # take max
+                        # TODO: check if it's a flat or TOU rate and take the max of each
+                        # Flat rate
+                        # if type(data_tariff) is
+                        # TOU demand rate
                         if data_tariff[0] > data_merge[label_tariff][0]:
                             data_merge[label_tariff] = data_tariff
                     else:  # sum
