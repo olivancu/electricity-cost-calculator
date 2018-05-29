@@ -100,7 +100,11 @@ class CostCalculator(object):
         while t_i <= df.index[-1]:
             ret[t_i.strftime("%Y-%m")] = {}
             for k in self.__tariffstructures.keys():
-                ret[t_i.strftime("%Y-%m")][k] = (0, 0)
+                if self.type_tariffs_map[k] == ChargeType.DEMAND:
+                    ret[t_i.strftime("%Y-%m")][k] = {}  # a dict of price -> (max, cost)
+                else:
+                    ret[t_i.strftime("%Y-%m")][k] = (0, 0)  # a tuple
+
             t_i += relativedelta(months=+1)
 
         # Compute the bill for each of the tariff type, for each month
@@ -238,8 +242,15 @@ class CostCalculator(object):
             acc_per_chargetype = {ChargeType.FIXED: 0.0, ChargeType.ENERGY: 0.0, ChargeType.DEMAND: 0.0}
 
             for lab_tariff, data in bill_struct.items():
-                acc_tot += data[1]  # second item in data is in dollar
-                acc_per_chargetype[self.type_tariffs_map[lab_tariff]] += data[1]
+                if self.type_tariffs_map[lab_tariff] is not ChargeType.DEMAND:
+                    cost_per_tariff = data[1]
+                else:
+                    cost_per_tariff = 0.0
+                    for p, data_demand in data.items():
+                        cost_per_tariff += p * data_demand[0]  # 0 -> max power ; 1 -> data when that happened
+
+                acc_tot += cost_per_tariff  # second item in data is in dollar
+                acc_per_chargetype[self.type_tariffs_map[lab_tariff]] += cost_per_tariff
 
             acc_per_label = bill_struct
 
@@ -254,6 +265,7 @@ class CostCalculator(object):
         # Per label
         print("\n| Total bill per type or tariff:")
         for l_key, v in acc_per_label.items():
+            # TODO: print nicely the details
             print(" - Type '{0}': {1} ($)".format(str(l_key), v))
 
         return acc_tot, acc_per_chargetype, acc_per_label
@@ -320,8 +332,13 @@ class CostCalculator(object):
         type_of_tariff = self.__tariffstructures[label_tariff]['type']
 
         if type_of_tariff == ChargeType.DEMAND:  # Demand: apply MAX
-            if new_data[0] > intermediate_monthly_bill[label_tariff][0]:
-                intermediate_monthly_bill[label_tariff] = (new_data[0], new_data[1])
+            for p, data in new_data.items():  # For each price -> tuple (max, date)
+                if p in intermediate_monthly_bill.keys():  # this price has already been seen: APPLY MAX
+                    if data[0] > intermediate_monthly_bill[label_tariff][p][0]:
+                        print("Demand rate update: for price {1}, {0} is greater than {2}".format(p, data, intermediate_monthly_bill[label_tariff][p])) # debug
+                        intermediate_monthly_bill[label_tariff][p] = data
+                else: # This is the first time this price has been seen: store it
+                    intermediate_monthly_bill[label_tariff][p] = data
         else:  # energy or fixed cost: apply SUM
             intermediate_monthly_bill[label_tariff] = (intermediate_monthly_bill[label_tariff][0] + new_data[0],
                                                        intermediate_monthly_bill[label_tariff][1] + new_data[1])
@@ -340,12 +357,13 @@ class CostCalculator(object):
             else:
                 for label_tariff, data_tariff in data_per_label.items():
                     if self.type_tariffs_map[label_tariff] == ChargeType.DEMAND:  # take max
-                        # TODO: check if it's a flat or TOU rate and take the max of each
-                        # Flat rate
-                        # if type(data_tariff) is
-                        # TOU demand rate
-                        if data_tariff[0] > data_merge[label_tariff][0]:
-                            data_merge[label_tariff] = data_tariff
+                        for p, data in data_tariff.items():  # For each price -> tuple (max, date)
+                            if p in data_merge[label_tariff].keys():  # this price has already been seen: APPLY MAX
+                                if data[0] > data_merge[label_tariff][p][0]:
+                                    print("Demand rate update: for price {1}, {0} is greater than {2}".format(p, data, data_merge[label_tariff][p]))  # debug
+                                    data_merge[label_tariff][p] = data
+                            else:  # This is the first time this price has been seen: store it
+                                data_merge[label_tariff][p] = data
                     else:  # sum
                         data_merge[label_tariff] = (data_merge[label_tariff][0] + data_tariff[0],
                                                     data_merge[label_tariff][1] + data_tariff[1])

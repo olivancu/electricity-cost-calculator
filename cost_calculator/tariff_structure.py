@@ -289,7 +289,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
             for p in set_of_daily_prices:
                 if p > 0 and p not in set_of_monthly_prices:  # A new price that hasn't yet been seen
                     set_of_monthly_prices.add(p)
-                    max_per_set[p] = (0, 0)
+                    max_per_set[p] = (0, None)  # the max and the date
 
             # Constructing the dataframe for an easier manipulation of time
             period_rate = len(daily_rate) / 24.0
@@ -320,12 +320,12 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 date_max_period = df[mask_price].idxmax()
                 max_power_period = df[date_max_period]
                 if max_power_period > max_per_set[p][0]:
-                    max_per_set[p] = (max_power_period / metric_unit_mult, date_max_period.to_pydatetime())
+                    max_per_set[p] = (metric_price_mult * max_power_period / metric_unit_mult, date_max_period.to_pydatetime())
 
         # Sum costs per periods
-        cost_tot = metric_price_mult * sum([p * v[0] for p, v in max_per_set.items()])
+        # cost_tot = metric_price_mult * sum([p * v[0] for p, v in max_per_set.items()])
 
-        return max_per_set, cost_tot
+        return max_per_set
 
 
 class TouEnergyChargeTariff(TimeOfUseTariff):
