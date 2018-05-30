@@ -313,6 +313,13 @@ class CostCalculator(object):
             return list_struct
         else:
             (start_sel, end_sel) = dates
+            if start_sel.tzinfo is None and len(list_struct) > 0:
+                first_block = list_struct[0]
+                start_sel = start_sel.replace(tzinfo=first_block.startdate.tzinfo)
+
+            if end_sel.tzinfo is None and len(list_struct) > 0:
+                first_block = list_struct[0]
+                end_sel = end_sel.replace(tzinfo=first_block.enddate.tzinfo)
 
             return [obj for obj in list_struct if ((obj.startdate <= start_sel <= obj.enddate) or (start_sel <= obj.startdate <= end_sel))]
 

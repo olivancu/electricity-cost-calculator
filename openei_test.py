@@ -5,6 +5,7 @@ import json
 import pandas as pd
 from openei_tariff.openei_tariff_analyzer import *
 import matplotlib.pyplot as plt
+import pytz
 
 # ----------- TEST DEMO -------------- #
 
@@ -23,9 +24,25 @@ map_site_to_tariff = {
     OpenEI_tariff(utility_id='14328',
                   sector='Commercial',
                   tariff_rate_of_interest='A-1 Small General Service',  # need to add Small General Service to get the right data ..
-                  distrib_level_of_interest='Secondary',
+                  distrib_level_of_interest=None,
                   phasewing='Single',
                   tou=True),
+    'e9c51ce5-4aa1-399c-8172-92073e273a0b':  # Fire station 8, Hayward
+    OpenEI_tariff(utility_id='14328',
+                  sector='Commercial',
+                  tariff_rate_of_interest='A-6',
+                  distrib_level_of_interest=None,  # it is at the secondary level, so not specified in the name
+                  phasewing=None,  # the word 'Poly' is to be excluded, because the names may omit this info ..
+                  tou=True,
+                  option_exclusion=['(X)', '(W)', 'Poly']),  # Need to reject the option X and W
+    '68e04192-e924-36b8-9c5e-f072bd93ed07':  # Avenal movie theater
+    OpenEI_tariff(utility_id='14328',
+                  sector='Commercial',
+                  tariff_rate_of_interest='E-19',
+                  distrib_level_of_interest='Secondary',
+                  phasewing=None,
+                  tou=True,
+                  option_exclusion=['Option R', 'Voluntary']),
 }
 
 # useful functions
@@ -38,7 +55,7 @@ if __name__ == '__main__':
 
     print("--- Loading meter data ...")
 
-    meter_uuid = '4c95836f-6bdb-3adc-ac5e-4c787ae027c7'
+    meter_uuid = '4d95d5ce-de62-3449-bd58-4dcad75b526d'
     print("Data from GreenButton meter uuid '{0}'".format(meter_uuid))
 
     df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
@@ -55,7 +72,7 @@ if __name__ == '__main__':
     print("--- Calling API ...")
     tariff_openei_data = map_site_to_tariff[meter_uuid]  # This points to an object
 
-    #tariff_openei_data.call_api(store_as_json=True)  # WARNING: this will erase the JSON with OpenEI data !
+    tariff_openei_data.call_api(store_as_json=True)  # WARNING: this will erase the JSON with OpenEI data !
 
     if tariff_openei_data.read_from_json() == 0:  # This calls the API to internally store the raw data that has to be analyzed, and write as a JSON file
         print "Tariff read from JSON successful"
@@ -83,8 +100,8 @@ if __name__ == '__main__':
     print(" ----------------------")
 
     # BILLING PERIOD
-    start_date_bill = datetime(2017, 7, 23, hour=0, minute=0, second=0)
-    end_date_bill = datetime(2017, 8, 21, hour=23, minute=59, second=59)
+    start_date_bill = datetime(2017, 7, 23, hour=0, minute=0, second=0, tzinfo=pytz.timezone("US/Pacific"))
+    end_date_bill = datetime(2017, 8, 21, hour=23, minute=59, second=59, tzinfo=pytz.timezone("US/Pacific"))
 
     mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
     data_meter = data_meter.loc[mask]

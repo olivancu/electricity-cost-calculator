@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 import requests
 import json
+import pytz
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
@@ -24,7 +25,7 @@ class OpenEI_tariff(object):
     LIMIT = '500'
     ORDER_BY_SORT = 'startdate'
 
-    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single', tou=False):
+    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single', tou=False, option_mandatory=None, option_exclusion=None):
 
         self.req_param = {}
 
@@ -46,6 +47,8 @@ class OpenEI_tariff(object):
         self.distrib_level_of_interest = distrib_level_of_interest
         self.phase_wing = phasewing
         self.tou = tou
+        self.option_exclusion = option_exclusion
+        self.option_mandatory = option_mandatory
 
         # The raw filtered answer from an API call
         self.data_openei = None
@@ -57,11 +60,11 @@ class OpenEI_tariff(object):
         data_filtered = []
 
         for data_block in data_openei['items']:
-            #print data_block['name']
+            print data_block['name']
             # Check the tariff name, this is stored in the field "name"
             if self.tariff_rate_of_interest not in data_block['name'] and self.tariff_rate_of_interest + '-' not in data_block['name']:
                 continue
-            #print(" - {0}".format(data_block['name']))
+            print(" - {0}".format(data_block['name']))
 
             # Check the wiring option
             if self.phase_wing is not None:
@@ -77,10 +80,30 @@ class OpenEI_tariff(object):
                 if self.distrib_level_of_interest not in data_block['name']:
                     continue
 
-            #print(" -- {0}".format(data_block['name']))
+            print(" -- {0}".format(data_block['name']))
             # Check the Time of Use option
             if (self.tou and 'TOU' not in data_block['name']) or (not self.tou and 'TOU' in data_block['name']):
                 continue
+
+            # Ensure some options on the rate:
+            if self.option_mandatory is not None:
+                continue_block = False
+                for o in self.option_mandatory:
+                    if o not in data_block['name']:
+                        continue_block = True
+                        break
+                if continue_block:
+                    continue
+
+            # Exclude some options on the rate
+            if self.option_exclusion is not None:
+                continue_block = False
+                for o in self.option_exclusion:
+                    if o in data_block['name']:
+                        continue_block = True
+                        break
+                if continue_block:
+                    continue
 
             #print(" -------> {0}".format(data_block['name']))
             # The conditions are fulfilled: add this block
@@ -113,8 +136,8 @@ class OpenEI_tariff(object):
 
         # Re-encode the date as human
         for block in data_filtered:
-            block['startdate'] = datetime.fromtimestamp(block['startdate']).strftime('%Y-%m-%dT%H:%M:%S.000Z')
-            block['enddate'] = datetime.fromtimestamp(block['enddate']).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            block['startdate'] = datetime.fromtimestamp(block['startdate'], tz=pytz.timezone("UTC")).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            block['enddate'] = datetime.fromtimestamp(block['enddate'], tz=pytz.timezone("UTC")).strftime('%Y-%m-%dT%H:%M:%S.000Z')
 
         # Store internally the filtered result
         self.data_openei = data_filtered
@@ -147,8 +170,8 @@ class OpenEI_tariff(object):
 
         # Encode the start/end dates as integers
         for block in self.data_openei:
-            block['enddate'] = time.mktime(datetime.strptime(block['enddate'], '%Y-%m-%dT%H:%M:%S.000Z').timetuple())
-            block['startdate'] = time.mktime(datetime.strptime(block['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').timetuple())
+            block['enddate'] = datetime.strptime(block['enddate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(tzinfo=pytz.timezone('UTC'))
+            block['startdate'] = datetime.strptime(block['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(tzinfo=pytz.timezone('UTC'))
 
         print self.data_openei
 
@@ -170,7 +193,7 @@ class OpenEI_tariff(object):
         # Grid level
         gridlevel_info = ''
         if self.distrib_level_of_interest is not None:
-            phase_info = '_gridlevel'+self.distrib_level_of_interest
+            gridlevel_info = '_gridlevel'+self.distrib_level_of_interest
 
         return 'u'+self.req_param['eia']+'_'+self.req_param['sector']+'_'+self.tariff_rate_of_interest+if_tou+phase_info+gridlevel_info
 
@@ -188,7 +211,7 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
     for block_rate in openei_tarif_obj.data_openei:
 
         # Tariff starting and ending dates
-        tariff_dates = (datetime.fromtimestamp(block_rate['startdate']), datetime.fromtimestamp(block_rate['enddate']))
+        tariff_dates = (block_rate['startdate'], block_rate['enddate'])
 
         # --- Fix charges
         tariff_fix = block_rate['fixedchargefirstmeter']
