@@ -4,6 +4,7 @@ from cost_calculator.cost_calculator import CostCalculator
 import json
 import pandas as pd
 from openei_tariff.openei_tariff_analyzer import *
+import matplotlib.pyplot as plt
 
 # ----------- TEST DEMO -------------- #
 
@@ -16,8 +17,15 @@ map_site_to_tariff = {
                   sector='Commercial',
                   tariff_rate_of_interest='A-10',
                   distrib_level_of_interest='Secondary',
-                  phasewing='Single Phase',
-                  tou=False)
+                  phasewing=None,
+                  tou=True),
+    '4d95d5ce-de62-3449-bd58-4dcad75b526d':  # Recreational center
+    OpenEI_tariff(utility_id='14328',
+                  sector='Commercial',
+                  tariff_rate_of_interest='A-1 Small General Service',  # need to add Small General Service to get the right data ..
+                  distrib_level_of_interest='Secondary',
+                  phasewing='Single',
+                  tou=True),
 }
 
 # useful functions
@@ -47,7 +55,13 @@ if __name__ == '__main__':
     print("--- Calling API ...")
     tariff_openei_data = map_site_to_tariff[meter_uuid]  # This points to an object
 
-    tariff_openei_data.call_api()  # This calls the API to internally store the raw data that has to be analyzed
+    #tariff_openei_data.call_api(store_as_json=True)  # WARNING: this will erase the JSON with OpenEI data !
+
+    if tariff_openei_data.read_from_json() == 0:  # This calls the API to internally store the raw data that has to be analyzed, and write as a JSON file
+        print "Tariff read from JSON successful"
+    else:
+        print "An error occurred when reading the JSON file"
+        exit()
 
     print("--- Bill calculation ...")
     bill_calc = CostCalculator()
@@ -78,6 +92,7 @@ if __name__ == '__main__':
     # 1) Get the bill over the period
     print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
     bill = bill_calc.compute_bill(data_meter)
+    print(bill)
     t, tt, ttt = bill_calc.print_aggregated_bill(bill)
 
     # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
@@ -85,5 +100,6 @@ if __name__ == '__main__':
 
     timestep = TariffElemPeriod.HOURLY  # We want a 1h period
 
-    price_elec, map =  bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
-    print price_elec.loc[:, 'customer_energy_charge']
+    price_elec, map = bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
+
+    print list(price_elec.loc[:, 'customer_energy_charge'])

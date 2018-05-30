@@ -1,14 +1,17 @@
 __author__ = 'Olivier Van Cutsem'
-
+#bill_calculator_lib.
 from cost_calculator.tariff_structure import *
 from cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
 import requests
+import json
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
+THIS_PATH = 'openei_tariff/'
+SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
 
 class OpenEI_tariff(object):
 
@@ -21,7 +24,7 @@ class OpenEI_tariff(object):
     LIMIT = '500'
     ORDER_BY_SORT = 'startdate'
 
-    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single Phas', tou=False):
+    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single', tou=False):
 
         self.req_param = {}
 
@@ -47,28 +50,49 @@ class OpenEI_tariff(object):
         # The raw filtered answer from an API call
         self.data_openei = None
 
-    def call_api(self):
+    def call_api(self, store_as_json=None):
 
         r = requests.get(self.URL_OPENEI, params=self.req_param)
         data_openei = r.json()
+        data_filtered = []
 
-        # TODO: this is only valid for the A-10 ! One needs to be more robust and look at the other fields of the answer
+        for data_block in data_openei['items']:
+            #print data_block['name']
+            # Check the tariff name, this is stored in the field "name"
+            if self.tariff_rate_of_interest not in data_block['name'] and self.tariff_rate_of_interest + '-' not in data_block['name']:
+                continue
+            #print(" - {0}".format(data_block['name']))
 
-        data_filtered = data_openei['items']
-        data_filtered = [v for v in data_filtered if self.tariff_rate_of_interest in v['name']]
-        data_filtered = [v for v in data_filtered if self.distrib_level_of_interest in v['name']]
-        if self.tou:
-            data_filtered = [v for v in data_filtered if 'TOU' in v['name']]
-        else:
-            data_filtered = [v for v in data_filtered if 'TOU' not in v['name']]
-        
+            # Check the wiring option
+            if self.phase_wing is not None:
+                if 'phasewiring' in data_block.keys():
+                    if not(self.phase_wing in data_block['phasewiring']):
+                        continue
+                else:  # check the title if this field is missing
+                    if self.phase_wing not in data_block['name']:  # TODO: be sure that Single / Poly is always written in the name
+                        continue
+
+            # Check the grid level option
+            if self.distrib_level_of_interest is not None:
+                if self.distrib_level_of_interest not in data_block['name']:
+                    continue
+
+            #print(" -- {0}".format(data_block['name']))
+            # Check the Time of Use option
+            if (self.tou and 'TOU' not in data_block['name']) or (not self.tou and 'TOU' in data_block['name']):
+                continue
+
+            #print(" -------> {0}".format(data_block['name']))
+            # The conditions are fulfilled: add this block
+            data_filtered.append(data_block)
 
         # Make sure we work with integer timestamps
         for rate_data in data_filtered:
             # Starting time
             if not (type(rate_data['startdate']) is int):
                 t_s = time.mktime(
-                    datetime.strptime(rate_data['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').timetuple())  # Always specified
+                    datetime.strptime(rate_data['startdate'],
+                                      '%Y-%m-%dT%H:%M:%S.000Z').timetuple())  # Always specified
                 rate_data['startdate'] = t_s
 
             # Ending time
@@ -87,8 +111,68 @@ class OpenEI_tariff(object):
             # Replace END time of the current elem by the START time of the next one if necessary
             data_cur['enddate'] = min(data_next['startdate'], data_cur['enddate'])
 
+        # Re-encode the date as human
+        for block in data_filtered:
+            block['startdate'] = datetime.fromtimestamp(block['startdate']).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            block['enddate'] = datetime.fromtimestamp(block['enddate']).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+
         # Store internally the filtered result
         self.data_openei = data_filtered
+
+        # Store the result of this processed API request in a JSON file that has the name built from the tariff info
+        if store_as_json is not None:
+            filename = self.json_filename
+            with open(THIS_PATH+filename+'.json', 'w') as outfile:
+                json.dump(data_filtered, outfile, indent=2, sort_keys=True)
+
+    def read_from_json(self):
+        """
+        Read tariff data from a JSON file to build the internal structure. The JSON file
+        :return:
+         - 0 if the data has been loaded from the json successfully,
+         - 1 if the data couldn't be laod from the json file
+         - 2 if the file couldn't be read
+        """
+        print THIS_PATH+self.json_filename
+        try:
+            with open(THIS_PATH+self.json_filename+SUFFIX_REVISED+'.json', 'r') as input_file:
+                try:
+                    self.data_openei = json.load(input_file)
+                except ValueError:
+                    print 'cant parse json'
+                    return 1
+        except EnvironmentError:
+            print 'cant open file'
+            return 2  # everything went well
+
+        # Encode the start/end dates as integers
+        for block in self.data_openei:
+            block['enddate'] = time.mktime(datetime.strptime(block['enddate'], '%Y-%m-%dT%H:%M:%S.000Z').timetuple())
+            block['startdate'] = time.mktime(datetime.strptime(block['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').timetuple())
+
+        print self.data_openei
+
+        return 0
+
+    @property
+    def json_filename(self):
+
+        # Conditional field: TOU or nothing
+        if_tou = ''
+        if self.tou:
+            if_tou = '_TOU'
+
+        # Wiring
+        phase_info = ''
+        if self.phase_wing is not None:
+            phase_info = '_phase'+self.phase_wing
+
+        # Grid level
+        gridlevel_info = ''
+        if self.distrib_level_of_interest is not None:
+            phase_info = '_gridlevel'+self.distrib_level_of_interest
+
+        return 'u'+self.req_param['eia']+'_'+self.req_param['sector']+'_'+self.tariff_rate_of_interest+if_tou+phase_info+gridlevel_info
 
 
 def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
@@ -119,12 +203,14 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
         # --- Demand charges
         tariff_demand_obj = get_rate_obj_from_openei(block_rate, ChargeType.DEMAND)
 
-        bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_demand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value[0]))
+        if tariff_demand_obj is not None:
+            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_demand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value[0]))
 
         # --- Energy charges
         tariff_energy_obj = get_rate_obj_from_openei(block_rate, ChargeType.ENERGY)
 
-        bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_energy_obj), str(TariffType.ENERGY_CUSTOM_CHARGE.value[0]))
+        if tariff_energy_obj is not None:
+            bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_energy_obj), str(TariffType.ENERGY_CUSTOM_CHARGE.value[0]))
 
     # Other useful information, beside the tariff
     # Loop over all the blocks to be sure, maybe such fields are missing in some ..
@@ -139,7 +225,6 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
         if 'peakkwhusagemin' in block_rate.keys():
             bill_calculator.tariff_min_kwh = block_rate['peakkwhusagemin']
 
-
 def get_rate_obj_from_openei(open_ei_block, select_rate):
     """
     Analyse the block get from the OpenEI api request and transform it into a generic structure
@@ -151,26 +236,31 @@ def get_rate_obj_from_openei(open_ei_block, select_rate):
 
     # TODO:  !!! hardcoded for A-10 - make it generic !!!
 
-    # TODO: use BlockRate instead of assuming it's a float !
+    # TODO later: use BlockRate instead of assuming it's a float !
 
     map_month_label = {1: 'winter', 0: 'summer'}
 
     rate_struct = {}
 
     if select_rate == ChargeType.DEMAND:
-        dem_rate_list = open_ei_block['flatdemandstructure']
-        dem_time_schedule_month = open_ei_block['flatdemandmonths']
 
-        for rate_idx in range(len(dem_rate_list)):
-            months_list = [i+1 for i, j in enumerate(dem_time_schedule_month) if j == rate_idx]
-            rate_struct[map_month_label[rate_idx]] = {TouRateSchedule.MONTHLIST_KEY: months_list,
-                                                      TouRateSchedule.DAILY_RATE_KEY: {
-                                                          'allweek': {
-                                                              TouRateSchedule.DAYSLIST_KEY: range(7),
-                                                              TouRateSchedule.RATES_KEY: 24 * [dem_rate_list[rate_idx][0]['rate']]
+        if 'flatdemandstructure' in open_ei_block.keys(): # there is a flat demand rate
+            dem_rate_list = open_ei_block['flatdemandstructure']
+            dem_time_schedule_month = open_ei_block['flatdemandmonths']
+
+            for rate_idx in range(len(dem_rate_list)):
+                months_list = [i+1 for i, j in enumerate(dem_time_schedule_month) if j == rate_idx]
+                rate_struct[map_month_label[rate_idx]] = {TouRateSchedule.MONTHLIST_KEY: months_list,
+                                                          TouRateSchedule.DAILY_RATE_KEY: {
+                                                              'allweek': {
+                                                                  TouRateSchedule.DAYSLIST_KEY: range(7),
+                                                                  TouRateSchedule.RATES_KEY: 24 * [dem_rate_list[rate_idx][0]['rate']]
+                                                              }
+                                                            }
                                                           }
-                                                        }
-                                                      }
+
+        if 'demandratestructure' in open_ei_block.keys():  # there is a TOU demand rate
+            pass  # todo for E19 and SCE !
 
     elif select_rate == ChargeType.ENERGY:
         en_rate_list = open_ei_block['energyratestructure']
@@ -203,6 +293,7 @@ def get_rate_obj_from_openei(open_ei_block, select_rate):
                                                        TouRateSchedule.RATES_KEY: daily_weekends_rate}
                                                 }
                                                 }
-
-    return TouRateSchedule(rate_struct)
-
+    if rate_struct != {}:
+        return TouRateSchedule(rate_struct)
+    else:
+        return None
