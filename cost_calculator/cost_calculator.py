@@ -28,9 +28,9 @@ class CostCalculator(object):
                           str(TariffType.ENERGY_CUSTOM_CHARGE.value[0]): ChargeType.ENERGY,
                           str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value[0]): ChargeType.DEMAND,
                           str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value[0]): ChargeType.DEMAND,
-                          str(TariffType.FIX_DREVENT_CHARGE.value[0]): ChargeType.FIXED,
-                          str(TariffType.ENERGY_DREVENT_CHARGE.value[0]): ChargeType.ENERGY,
-                          str(TariffType.DEMAND_DREVENT_CHARGE.value[0]): ChargeType.DEMAND,
+                          str(TariffType.PDP_ENERGY_CHARGE.value[0]): ChargeType.ENERGY,
+                          str(TariffType.PDP_ENERGY_CREDIT.value[0]): ChargeType.ENERGY,
+                          str(TariffType.PDP_DEMAND_CREDIT.value[0]): ChargeType.DEMAND,
                           }
 
     def __init__(self, type_tariffs_map=None):
