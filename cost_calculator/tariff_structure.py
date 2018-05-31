@@ -75,8 +75,13 @@ class TariffBase(object):
         ret = {}
 
         # Select only the data in this tariff window
+        start_sel = self.startdate
+        start_sel = start_sel.replace(tzinfo=df.index[0].tzinfo)
 
-        mask = (df.index >= self.startdate) & (df.index <= self.enddate)
+        end_sel = self.enddate
+        end_sel = end_sel.replace(tzinfo=df.index[0].tzinfo)
+
+        mask = (df.index >= start_sel) & (df.index <= end_sel)
         df = df.loc[mask]
 
         # Loop over the months
@@ -299,16 +304,12 @@ class TouDemandChargeTariff(TimeOfUseTariff):
             elif period_rate == 4:
                 freq_per = '15min'
 
-            # The first day may be incomplete
-            first_idx = (df_day.index[0].hour + df_day.index[0].minute/60.0) * period_rate
-
-            # The last day may be incomplete
-            last_idx = (df_day.index[-1].hour + df_day.index[-1].minute/60.0) * period_rate
-
-            data = {'date': df_day.asfreq(freq=freq_per).index, 'price': daily_rate[int(first_idx):int(last_idx)+1]}
-
+            # In some cases the day might not be full: missing data or DST
+            daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period_rate)] for i in range(len(df_day.index)) ]
+            data = {'date': df_day.index[:], 'price': daily_prices}
             df_prices = pd.DataFrame(data=data)
             df_prices.set_index('date')
+
             for day_p in set_of_daily_prices:
 
                 # Create the mask in the day for this price
@@ -369,9 +370,9 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
 
         # TODO: check for blockrate !
 
-        for idx, day in df.groupby(df.index.date):
+        for idx, df_day in df.groupby(df.index.date):
 
-            daily_rate = self.rate_schedule.get_daily_rate(day.index[0])
+            daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
             period = len(daily_rate) / 24.0
 
             # TODO: remove if's ...
@@ -383,13 +384,12 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
             elif period == 4:
                 freq_per = '15min'
 
-            df_day = day.asfreq(freq=freq_per)
+            daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period)] for i in range(len(df_day.index)) ]
 
-            # The first month may be incomplete
-            first_idx = (df_day.index[0].hour + df_day.index[0].minute/60.0) * period
+            data = {'date': df_day.index[:], 'price': daily_prices}
 
-            # The last month may be incomplete
-            last_idx = (df_day.index[-1].hour + df_day.index[-1].minute/60.0) * period
+            df_prices = pd.DataFrame(data=data)
+            df_prices.set_index('date')
 
             # Unit and cost scale
             mult_energy_unit = float(self.unit_metric.value[0])
@@ -405,6 +405,6 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
             energy += sum(df_values_in_day) / mult_energy_unit
 
             # Cumulate the bill over the month
-            cost += sum(mult_cost_unit * df_day.multiply(daily_rate[int(first_idx):int(last_idx)+1])) / mult_energy_unit
+            cost += sum(mult_cost_unit * df_values_in_day.multiply(df_prices.loc[:, 'price'].tolist())) / mult_energy_unit
 
         return energy, cost
