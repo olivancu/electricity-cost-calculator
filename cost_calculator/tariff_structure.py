@@ -14,9 +14,9 @@ class TariffType(Enum):
     ENERGY_CUSTOM_CHARGE = 'customer_energy_charge',
     DEMAND_CUSTOM_CHARGE_SEASON = 'customer_demand_charge_season',
     DEMAND_CUSTOM_CHARGE_TOU = 'customer_demand_charge_tou',
-    FIX_DREVENT_CHARGE = 'dr_event_fix_charge',
-    ENERGY_DREVENT_CHARGE = 'dr_event_energy_charge',
-    DEMAND_DREVENT_CHARGE = 'dr_event_demand_charge',
+    PDP_ENERGY_CHARGE = 'pdp_event_energy_charge',
+    PDP_ENERGY_CREDIT = 'pdp_non_event_energy_charge',
+    PDP_DEMAND_CREDIT = 'pdp_non_event_demand_charge',
 
 
 class TariffElemPeriod(Enum):
@@ -315,7 +315,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # Create the mask in the day for this price
                 mask_price = df_prices['price'] == day_p
                 mask_price = mask_price.tolist()
-                mask_price_index = df_prices[mask_price].index
+                mask_price_index = df_prices.loc[mask_price, 'date']
                 date_max_period = df_day[mask_price_index].idxmax()
 
                 if data_col is not None:
