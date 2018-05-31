@@ -56,7 +56,7 @@ class TariffBase(object):
         self.name = name
         self.unit_cost = unit_cost
 
-    def compute_bill(self, df):
+    def compute_bill(self, df, data_col=None):
         """
         Compute the bill due to the power/energy consumption in df, for each billing period specified in billing_periods
 
@@ -76,19 +76,19 @@ class TariffBase(object):
 
         # Select only the data in this tariff window
 
-        # mask = (df.index >= self.startdate) & (df.index <= self.enddate)
-        # df = df.loc[mask]
+        mask = (df.index >= self.startdate) & (df.index <= self.enddate)
+        df = df.loc[mask]
 
         # Loop over the months
         t_s = df.index[0]
         last_day_of_month = calendar.monthrange(t_s.year, t_s.month)[1]  # The last day of this month
-        t_e = datetime(t_s.year, t_s.month, last_day_of_month, hour=23, minute=59, second=59)  # end of the current month
+        t_e = datetime(t_s.year, t_s.month, last_day_of_month, hour=23, minute=59, second=59, tzinfo=t_s.tzinfo)  # end of the current month
         t_e = min(df.index[-1], t_e)
 
         while t_s <= t_e:
             mask = (df.index >= t_s) & (df.index <= t_e)
             df_month = df.loc[mask]
-            monthly_bill = self.compute_monthly_bill(df_month)
+            monthly_bill = self.compute_monthly_bill(df_month, data_col)
             ret[t_s.strftime("%Y-%m")] = monthly_bill
 
             # Prepare the next billing month
@@ -98,20 +98,20 @@ class TariffBase(object):
                 month = 1
                 year += 1
 
-            t_s = datetime(year, month, 1, hour=0, minute=0, second=0)
+            t_s = datetime(year, month, 1, hour=0, minute=0, second=0, tzinfo=t_s.tzinfo)
 
             last_day_of_month = calendar.monthrange(year, month)[1]
-            t_e = datetime(year, month, last_day_of_month, hour=23, minute=59, second=59)
+            t_e = datetime(year, month, last_day_of_month, hour=23, minute=59, second=59, tzinfo=t_s.tzinfo)
             t_e = min(df.index[-1], t_e)
 
         return ret
 
     @abstractmethod
-    def compute_monthly_bill(self, df):
+    def compute_monthly_bill(self, df, data_col=None):
         """
         Compute the monthly bill due to the power/energy consumption in df
         :param df: a pandas dataframe
-        :param param: an additional set of parameters
+        :param data_col: the column label containing the data
         :return: a tuple (float, float) -> (value, cost), representing the bill and the corresponding metric linked to the cost
         """
 
@@ -165,7 +165,7 @@ class FixedTariff(TariffBase):
         self.__rate_period = bill_period
         self.__rate_value = rate_value
 
-    def compute_monthly_bill(self, df):
+    def compute_monthly_bill(self, df, data_col=None):
         """
         Compute the monthly bill due to a fixed periodic cost
 
@@ -216,7 +216,7 @@ class TimeOfUseTariff(TariffBase):
         self.__unit_metric = unit_metric
 
     @abstractmethod
-    def compute_monthly_bill(self, df):
+    def compute_monthly_bill(self, df, data_col=None):
         """
         idem super
         """
@@ -265,7 +265,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
 
         super(TouDemandChargeTariff, self).__init__(dates, time_schedule, unit_metric, unit_cost, name)
 
-    def compute_monthly_bill(self, df):
+    def compute_monthly_bill(self, df, data_col=None):
         """
         Compute the bill due to a TOU tariff
         :param df: a pandas dataframe
@@ -277,8 +277,8 @@ class TouDemandChargeTariff(TimeOfUseTariff):
         metric_price_mult = float(self.unit_cost.value[0])
 
         # TODO check the period of the data ! It has been assumed that mean(P_per) = E_per
-        # The logic is to get the TOU demand price and split it in different periods, according to the price values
-        set_of_monthly_prices = set()
+        # The logic is to get the TOU demand price and split it in different periods, according to the mask
+
         max_per_set = {}
 
         for idx, df_day in df.groupby(df.index.date):
@@ -286,10 +286,6 @@ class TouDemandChargeTariff(TimeOfUseTariff):
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
 
             set_of_daily_prices = set(daily_rate)
-            for p in set_of_daily_prices:
-                if p > 0 and p not in set_of_monthly_prices:  # A new price that hasn't yet been seen
-                    set_of_monthly_prices.add(p)
-                    max_per_set[p] = (0, None)  # the max and the date
 
             # Constructing the dataframe for an easier manipulation of time
             period_rate = len(daily_rate) / 24.0
@@ -312,18 +308,35 @@ class TouDemandChargeTariff(TimeOfUseTariff):
             data = {'date': df_day.asfreq(freq=freq_per).index, 'price': daily_rate[int(first_idx):int(last_idx)+1]}
 
             df_prices = pd.DataFrame(data=data)
+            df_prices.set_index('date')
+            for day_p in set_of_daily_prices:
 
-            for p in set_of_daily_prices:
+                # Create the mask in the day for this price
+                mask_price = df_prices['price'] == day_p
+                mask_price = mask_price.tolist()
+                mask_price_index = df_prices[mask_price].index
+                date_max_period = df_day[mask_price_index].idxmax()
 
-                # select the indexes for this price
-                mask_price = df_prices[df_prices['price'] == p].index
-                date_max_period = df[mask_price].idxmax()
-                max_power_period = df[date_max_period]
-                if max_power_period > max_per_set[p][0]:
-                    max_per_set[p] = (metric_price_mult * max_power_period / metric_unit_mult, date_max_period.to_pydatetime())
+                if data_col is not None:
+                    max_power_period = df_day.loc[date_max_period, data_col] / metric_unit_mult
+                else:
+                    max_power_period = df_day[date_max_period] / metric_unit_mult
 
-        # Sum costs per periods
-        # cost_tot = metric_price_mult * sum([p * v[0] for p, v in max_per_set.items()])
+                # Search for the same mask and update the value if a new mask
+                add_this_demand = True
+                existing_mask_price = [k for k, v in max_per_set.items() if v['mask'] == mask_price]
+                if len(existing_mask_price) > 0:  # Find the identical mask over the day
+                    existing_mask_price = existing_mask_price[0]
+                    if max_power_period > max_per_set[existing_mask_price]['max-demand']:  # Check if the corresponding demand is greater
+                        del max_per_set[existing_mask_price]  # delete the former value, and add it (after)
+                    else:
+                        add_this_demand = False
+
+                # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
+                if add_this_demand:
+                    max_power_scaled = max_power_period
+                    max_power_date = date_max_period.to_pydatetime()
+                    max_per_set[metric_price_mult * day_p] = {'mask': mask_price, 'max-demand': max_power_scaled, 'max-demand-date': max_power_date}
 
         return max_per_set
 
@@ -343,7 +356,7 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
 
         super(TouEnergyChargeTariff, self).__init__(dates, time_schedule, unit_metric, unit_cost, name)
 
-    def compute_monthly_bill(self, df):
+    def compute_monthly_bill(self, df, data_col=None):
         """
         Compute the bill due to a TOU tariff
         :param df: a pandas dataframe
@@ -383,7 +396,13 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
             mult_cost_unit = float(self.unit_cost.value[0])
 
             # Cumulate the energy over the month
-            energy += sum(df_day[:]) / mult_energy_unit
+
+            if data_col is not None:
+                df_values_in_day = df_day.loc[:, data_col]
+            else:
+                df_values_in_day = df_day[:]
+
+            energy += sum(df_values_in_day) / mult_energy_unit
 
             # Cumulate the bill over the month
             cost += sum(mult_cost_unit * df_day.multiply(daily_rate[int(first_idx):int(last_idx)+1])) / mult_energy_unit

@@ -64,8 +64,9 @@ class CostCalculator(object):
 
     # --- Useful methods
 
-    def compute_bill(self, df, monthly_detailed=False):
+    def compute_bill(self, df, column_data=None, monthly_detailed=False):
         """
+        #TODO: create a class for the bill !
         Return the bill corresponding to the electricity data in a data frame:
 
         {
@@ -81,13 +82,14 @@ class CostCalculator(object):
         {
             "YY-MM":
             {
-                "label1": (int or float, float),    -> the metric associated to the label1 and the corresponding cost (in $) in the month
-                "label2": (int or float, float),    -> the metric associated to the label2 and the corresponding cost (in $) in the month
+                "label1": (int or float, float) or a dict,    -> the metric associated to the label1 and the corresponding cost (in $) in the month
+                "label2": (int or float, float) or a dict,    -> the metric associated to the label2 and the corresponding cost (in $) in the month
                 ...
             }
         }
 
-        :param df: a pandas dataframe containing power consumption (in W)
+        :param df: a pandas dataframe containing power consumption (in W) in the column 'column_data'.
+        If column data is None, it is assumed that only 1 column makes up the df
         :return: a dictionary representing the bill as described above
         """
 
@@ -111,7 +113,7 @@ class CostCalculator(object):
         for label, tariff_data in self.__tariffstructures.items():
             l_blocks = self.get_tariff_struct(label, (df.index[0], df.index[-1]))  # get all the tariff blocks for this period and this tariff type
             for tariff_block in l_blocks:
-                tariff_cost_list = tariff_block.compute_bill(df)  # this returns a dict of time-period pointing to tuple that contains both the metric of the bill and the cost
+                tariff_cost_list = tariff_block.compute_bill(df, column_data)  # this returns a dict of time-period pointing to tuple that contains both the metric of the bill and the cost
                 for time_label, bill_data in tariff_cost_list.items():
                     self.update_bill_structure(ret[time_label], label, bill_data)
 
@@ -247,7 +249,7 @@ class CostCalculator(object):
                 else:
                     cost_per_tariff = 0.0
                     for p, data_demand in data.items():
-                        cost_per_tariff += p * data_demand[0]  # 0 -> max power ; 1 -> data when that happened
+                        cost_per_tariff += p * data_demand['max-demand']
 
                 acc_tot += cost_per_tariff  # second item in data is in dollar
                 acc_per_chargetype[self.type_tariffs_map[lab_tariff]] += cost_per_tariff
@@ -339,13 +341,20 @@ class CostCalculator(object):
         type_of_tariff = self.__tariffstructures[label_tariff]['type']
 
         if type_of_tariff == ChargeType.DEMAND:  # Demand: apply MAX
-            for p, data in new_data.items():  # For each price -> tuple (max, date)
-                if p in intermediate_monthly_bill.keys():  # this price has already been seen: APPLY MAX
-                    if data[0] > intermediate_monthly_bill[label_tariff][p][0]:
-                        print("Demand rate update: for price {1}, {0} is greater than {2}".format(p, data, intermediate_monthly_bill[label_tariff][p])) # debug
-                        intermediate_monthly_bill[label_tariff][p] = data
-                else: # This is the first time this price has been seen: store it
-                    intermediate_monthly_bill[label_tariff][p] = data
+            for p in new_data.keys():  # For each price -> dict (mask, max-p, date-max-p)
+
+                this_mask = new_data[p]['mask']  # get the new data mask
+                existing_mask_price = [k for k, v in intermediate_monthly_bill[label_tariff].items()  if v['mask'] == this_mask]
+
+                if len(existing_mask_price) > 0:  # this mask has already been seen: APPLY MAX
+                    existing_mask_price = existing_mask_price[0]
+                    if new_data[p]['max-demand'] > intermediate_monthly_bill[label_tariff][existing_mask_price]['max-demand']:
+                        print("Demand rate update: for mask {0}, {0} is greater than {2}".format(this_mask, new_data[p]['max-demand'], intermediate_monthly_bill[label_tariff][existing_mask_price]['max-demand'])) # debug
+
+                        del intermediate_monthly_bill[label_tariff][existing_mask_price]
+                        intermediate_monthly_bill[label_tariff][p] = new_data[p]
+                else:  # This is the first time this mask has been seen: store it
+                    intermediate_monthly_bill[label_tariff][p] = new_data[p]
         else:  # energy or fixed cost: apply SUM
             intermediate_monthly_bill[label_tariff] = (intermediate_monthly_bill[label_tariff][0] + new_data[0],
                                                        intermediate_monthly_bill[label_tariff][1] + new_data[1])
@@ -364,10 +373,15 @@ class CostCalculator(object):
             else:
                 for label_tariff, data_tariff in data_per_label.items():
                     if self.type_tariffs_map[label_tariff] == ChargeType.DEMAND:  # take max
-                        for p, data in data_tariff.items():  # For each price -> tuple (max, date)
-                            if p in data_merge[label_tariff].keys():  # this price has already been seen: APPLY MAX
-                                if data[0] > data_merge[label_tariff][p][0]:
-                                    print("Demand rate update: for price {1}, {0} is greater than {2}".format(p, data, data_merge[label_tariff][p]))  # debug
+                        for p, data in data_tariff.items():  # For each price -> dict (mask, max, date)
+                            this_mask = data['mask']  # get the new data mask
+                            existing_mask_price = [k for k, v in data_merge[label_tariff].items() if v['mask'] == this_mask]
+
+                            if len(existing_mask_price) > 0:  # this mask has already been seen: APPLY MAX
+                                existing_mask_price = existing_mask_price[0]
+                                if data['max-demand'] > data_merge[label_tariff][existing_mask_price]['max-demand']:
+                                    print("Demand rate update: for mask {1}, {0} is greater than {2}".format(this_mask, data, data_merge[label_tariff][p]))  # debug
+                                    del data_merge[label_tariff][existing_mask_price]
                                     data_merge[label_tariff][p] = data
                             else:  # This is the first time this price has been seen: store it
                                 data_merge[label_tariff][p] = data
