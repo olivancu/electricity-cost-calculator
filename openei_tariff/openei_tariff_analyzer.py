@@ -194,8 +194,9 @@ class OpenEI_tariff(object):
 
         return 'u'+self.req_param['eia']+'_'+self.req_param['sector']+'_'+self.tariff_rate_of_interest+if_tou+phase_info+gridlevel_info
 
+# --- Inject data from OpenEI_tariff object to the Bill Calculator
 
-def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
+def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_filenames="PDP_events.json"):
     """
     Analyze the content of an OpenEI request in order to fill a CostCalculator object
     :param openei_tarif_obj: an instance of OpenEI_tariff that already call the API
@@ -205,6 +206,7 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
 
     tariff_struct = {}
 
+    # Analyse each block
     for block_rate in openei_tarif_obj.data_openei:
 
         # Tariff starting and ending dates
@@ -239,6 +241,21 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
         if tariff_toudemand_obj is not None:
             bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_toudemand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value[0]))
 
+        # --- PDP credits for energy - todo: remove the pdp days
+        tariff_pdp_credit_energy_obj = get_pdp_credit_energyrate_obj_from_openei(block_rate)
+
+        if tariff_pdp_credit_energy_obj is not None:
+            bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_pdp_credit_energy_obj),
+                                       str(TariffType.PDP_ENERGY_CREDIT.value[0]))
+
+        # --- PDP credits for energy - todo: remove the pdp days
+        tariff_pdp_credit_demand_obj = get_pdp_credit_demandrate_obj_from_openei(block_rate)
+
+        if tariff_pdp_credit_demand_obj is not None:
+            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_pdp_credit_demand_obj),
+                                       str(TariffType.PDP_DEMAND_CREDIT.value[0]))
+                # --- PDP credits for demand
+
     # Other useful information, beside the tariff
     # Loop over all the blocks to be sure, maybe such fields are missing in some ..
     for block_rate in openei_tarif_obj.data_openei:
@@ -252,6 +269,26 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
         if 'peakkwhusagemin' in block_rate.keys():
             bill_calculator.tariff_min_kwh = block_rate['peakkwhusagemin']
 
+    # Analyse PdP events
+    pdp_data = []
+    try:
+        with open(THIS_PATH+pdp_event_filenames, 'r') as pdp_file:
+            try:
+                pdp_data = json.load(pdp_file)
+            except ValueError:
+                print "PdP events: can't parse json"
+    except EnvironmentError:
+        print "PdP events: can't open file"
+
+    pdp_data_filter = [event for event in pdp_data if event['utility_id'] == int(openei_tarif_obj.req_param['eia'])]
+    for pdp_event in pdp_data_filter:
+        print(pdp_event)
+        pdp_dates = datetime.strptime(pdp_event['start_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC')), datetime.strptime(
+            pdp_event['end_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC'))
+        tariff_pdp_obj = get_pdp_energycharge(openei_tarif_obj, pdp_dates[0])
+        if tariff_pdp_obj is not None:
+            bill_calculator.add_tariff(TouEnergyChargeTariff(pdp_dates, tariff_pdp_obj),
+                                       str(TariffType.PDP_ENERGY_CHARGE.value[0]))
 
 def get_energyrate_obj_from_openei(open_ei_block):
 
@@ -273,24 +310,13 @@ def get_energyrate_obj_from_openei(open_ei_block):
 
 
 def get_flatdemand_obj_from_openei(open_ei_block):
-    map_month_label = {1: 'winter', 0: 'summer'}
 
     rate_struct = {}
     if 'flatdemandstructure' in open_ei_block.keys():  # there is a flat demand rate
         dem_rate_list = open_ei_block['flatdemandstructure']
         dem_time_schedule_month = open_ei_block['flatdemandmonths']
 
-        for rate_idx in range(len(dem_rate_list)):
-            months_list = [i + 1 for i, j in enumerate(dem_time_schedule_month) if j == rate_idx]
-            rate_struct[map_month_label[rate_idx]] = {TouRateSchedule.MONTHLIST_KEY: months_list,
-                                                      TouRateSchedule.DAILY_RATE_KEY: {
-                                                          'allweek': {
-                                                              TouRateSchedule.DAYSLIST_KEY: range(7),
-                                                              TouRateSchedule.RATES_KEY: 24 * [
-                                                                  dem_rate_list[rate_idx][0]['rate']]
-                                                          }
-                                                      }
-                                                      }
+        rate_struct = read_flat_rates(dem_rate_list, dem_time_schedule_month)
 
     if rate_struct != {}:
         return TouRateSchedule(rate_struct)
@@ -300,7 +326,6 @@ def get_flatdemand_obj_from_openei(open_ei_block):
 
 def get_demandrate_obj_from_openei(open_ei_block):
 
-    # TODO later: use BlockRate instead of assuming it's a float !
     if 'demandratestructure' not in open_ei_block.keys():
         return None
 
@@ -350,3 +375,114 @@ def read_tou_rates(rate_map, weekdays_schedule, weekends_schedule):
                                                 }
 
     return ret
+
+
+def read_flat_rates(rate_map, month_schedule):
+    """
+
+    :param rate_map:
+    :param month_schedule:
+    :return:
+    """
+    map_month_label = {1: 'winter', 0: 'summer'}
+    rate_struct = {}
+
+    for rate_idx in range(len(rate_map)):
+        months_list = [i + 1 for i, j in enumerate(month_schedule) if j == rate_idx]
+        rate_struct[map_month_label[rate_idx]] = {TouRateSchedule.MONTHLIST_KEY: months_list,
+                                                  TouRateSchedule.DAILY_RATE_KEY: {
+                                                      'allweek': {
+                                                          TouRateSchedule.DAYSLIST_KEY: range(7),
+                                                          TouRateSchedule.RATES_KEY: 24 * [
+                                                              rate_map[rate_idx][0]['rate']]
+                                                      }
+                                                  }
+                                                  }
+
+    return rate_struct
+
+# -- PDP manipulation
+
+def get_pdp_energycharge(openei_tarif_obj, date_start_event):
+    """
+
+    :param openei_tarif_obj:
+    :param daterange:
+    :return:
+    """
+
+    # Search the corresponding block in the OpenEI data
+    block_l = [data for data in openei_tarif_obj.data_openei if data['startdate'] <= date_start_event <= data['enddate']]
+
+    if len(block_l) > 0:  # no block found ..
+        block = block_l[0]
+
+        if 'pdp_charge_energy' not in block:  # this tariff doesn't support PDP
+            return None
+
+        energy_charge = block['pdp_charge_energy']
+
+        # TODO: encode it as a RTP structure
+        rate_struct = {}
+        rate_struct['allmonth'] = {TouRateSchedule.MONTHLIST_KEY: range(1,13),
+                                                  TouRateSchedule.DAILY_RATE_KEY: {
+                                                      'allweek': {
+                                                          TouRateSchedule.DAYSLIST_KEY: range(7),
+                                                          TouRateSchedule.RATES_KEY: energy_charge
+                                                      }
+                                                  }
+                                                  }
+        return TouRateSchedule(rate_struct)
+    else:
+        return None
+
+def get_pdp_credit_energyrate_obj_from_openei(open_ei_block):
+    """
+
+    :param block_rate:
+    :return:
+    """
+
+    # TODO later: use BlockRate instead of assuming it's a float !
+    if 'pdp_credit_energyratestructure' not in open_ei_block.keys():
+        return None
+
+    en_rate_list = open_ei_block['pdp_credit_energyratestructure']
+
+    weekdays_schedule = open_ei_block['energyweekdayschedule']
+    weekends_schedule = open_ei_block['energyweekendschedule']
+
+    rate_struct = read_tou_rates(en_rate_list, weekdays_schedule, weekends_schedule)
+
+    if rate_struct != {}:
+        return TouRateSchedule(rate_struct)
+    else:
+        return None
+
+def get_pdp_credit_demandrate_obj_from_openei(open_ei_block):
+    """
+
+    :param block_rate:
+    :return:
+    """
+
+    if 'pdp_credit_demandratestructure' not in open_ei_block.keys():
+        return None
+
+    pdp_demand_credit_list = open_ei_block['pdp_credit_demandratestructure']
+
+    rate_struct = {}
+
+    if 'demandweekdayschedule' in open_ei_block.keys():  # TOU demand
+        weekdays_schedule = open_ei_block['demandweekdayschedule']
+        weekends_schedule = open_ei_block['demandweekendschedule']
+        rate_struct = read_tou_rates(pdp_demand_credit_list, weekdays_schedule, weekends_schedule)
+
+    elif 'flatdemandstructure' in open_ei_block.keys(): # flat demand
+        monthly_schedule = open_ei_block['flatdemandmonths']
+        rate_struct = read_flat_rates(pdp_demand_credit_list, monthly_schedule)
+
+    if rate_struct != {}:
+        return TouRateSchedule(rate_struct)
+    else:
+        return None
