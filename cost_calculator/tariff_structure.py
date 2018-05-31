@@ -316,12 +316,19 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 mask_price = df_prices['price'] == day_p
                 mask_price = mask_price.tolist()
                 mask_price_index = df_prices.loc[mask_price, 'date']
-                date_max_period = df_day[mask_price_index].idxmax()
+
+                if data_col is not None:
+                    date_max_period = df_day.loc[mask_price_index, data_col].idxmax()
+                else:
+                    date_max_period = df_day.loc[mask_price_index].idxmax()
 
                 if data_col is not None:
                     max_power_period = df_day.loc[date_max_period, data_col] / metric_unit_mult
                 else:
                     max_power_period = df_day[date_max_period] / metric_unit_mult
+
+                print "Max power: {0} ".format(max_power_period)
+                print "Max power type object: {0} ".format(type(max_power_period))
 
                 # Search for the same mask and update the value if a new mask
                 add_this_demand = True
@@ -336,6 +343,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
                     max_power_scaled = max_power_period
+
                     max_power_date = date_max_period.to_pydatetime()
                     max_per_set[metric_price_mult * day_p] = {'mask': mask_price, 'max-demand': max_power_scaled, 'max-demand-date': max_power_date}
 
@@ -385,7 +393,6 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
                 freq_per = '15min'
 
             daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period)] for i in range(len(df_day.index)) ]
-
             data = {'date': df_day.index[:], 'price': daily_prices}
 
             df_prices = pd.DataFrame(data=data)
