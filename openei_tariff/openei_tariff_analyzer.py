@@ -11,7 +11,7 @@ import pytz
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
-THIS_PATH = 'openei_tariff/'
+THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
 
 class OpenEI_tariff(object):
@@ -156,7 +156,6 @@ class OpenEI_tariff(object):
          - 1 if the data couldn't be laod from the json file
          - 2 if the file couldn't be read
         """
-        print THIS_PATH+self.json_filename
         try:
             with open(THIS_PATH+self.json_filename+SUFFIX_REVISED+'.json', 'r') as input_file:
                 try:
@@ -172,8 +171,6 @@ class OpenEI_tariff(object):
         for block in self.data_openei:
             block['enddate'] = datetime.strptime(block['enddate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(tzinfo=pytz.timezone('UTC'))
             block['startdate'] = datetime.strptime(block['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(tzinfo=pytz.timezone('UTC'))
-
-        print self.data_openei
 
         return 0
 
@@ -223,17 +220,24 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
 
         bill_calculator.add_tariff(FixedTariff(tariff_dates, tariff_fix, period_fix_charge), str(TariffType.FIX_CUSTOM_CHARGE.value[0]))
 
-        # --- Demand charges
-        tariff_demand_obj = get_rate_obj_from_openei(block_rate, ChargeType.DEMAND)
+        # --- Demand charges: flat
+        tariff_flatdemand_obj = get_flatdemand_obj_from_openei(block_rate)
 
-        if tariff_demand_obj is not None:
-            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_demand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value[0]))
+        if tariff_flatdemand_obj is not None:
+            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_flatdemand_obj),
+                                       str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value[0]))
 
         # --- Energy charges
-        tariff_energy_obj = get_rate_obj_from_openei(block_rate, ChargeType.ENERGY)
+        tariff_energy_obj = get_energyrate_obj_from_openei(block_rate)
 
         if tariff_energy_obj is not None:
             bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_energy_obj), str(TariffType.ENERGY_CUSTOM_CHARGE.value[0]))
+
+        # --- Demand charges: tou
+        tariff_toudemand_obj = get_demandrate_obj_from_openei(block_rate)
+
+        if tariff_toudemand_obj is not None:
+            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_toudemand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value[0]))
 
     # Other useful information, beside the tariff
     # Loop over all the blocks to be sure, maybe such fields are missing in some ..
@@ -248,75 +252,101 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator):
         if 'peakkwhusagemin' in block_rate.keys():
             bill_calculator.tariff_min_kwh = block_rate['peakkwhusagemin']
 
-def get_rate_obj_from_openei(open_ei_block, select_rate):
-    """
-    Analyse the block get from the OpenEI api request and transform it into a generic structure
 
-    :param open_ei_struct: a block get from the OpenEI API
-    :param select_rate: a ChargeType Enum, representing the desired rate to select
-    :return: the corresponding RateSchedule object
-    """
-
-    # TODO:  !!! hardcoded for A-10 - make it generic !!!
+def get_energyrate_obj_from_openei(open_ei_block):
 
     # TODO later: use BlockRate instead of assuming it's a float !
+    if 'energyratestructure' not in open_ei_block.keys():
+        return None
 
-    map_month_label = {1: 'winter', 0: 'summer'}
+    en_rate_list = open_ei_block['energyratestructure']
 
-    rate_struct = {}
+    weekdays_schedule = open_ei_block['energyweekdayschedule']
+    weekends_schedule = open_ei_block['energyweekendschedule']
 
-    if select_rate == ChargeType.DEMAND:
+    rate_struct = read_tou_rates(en_rate_list, weekdays_schedule, weekends_schedule)
 
-        if 'flatdemandstructure' in open_ei_block.keys(): # there is a flat demand rate
-            dem_rate_list = open_ei_block['flatdemandstructure']
-            dem_time_schedule_month = open_ei_block['flatdemandmonths']
-
-            for rate_idx in range(len(dem_rate_list)):
-                months_list = [i+1 for i, j in enumerate(dem_time_schedule_month) if j == rate_idx]
-                rate_struct[map_month_label[rate_idx]] = {TouRateSchedule.MONTHLIST_KEY: months_list,
-                                                          TouRateSchedule.DAILY_RATE_KEY: {
-                                                              'allweek': {
-                                                                  TouRateSchedule.DAYSLIST_KEY: range(7),
-                                                                  TouRateSchedule.RATES_KEY: 24 * [dem_rate_list[rate_idx][0]['rate']]
-                                                              }
-                                                            }
-                                                          }
-
-        if 'demandratestructure' in open_ei_block.keys():  # there is a TOU demand rate
-            pass  # todo for E19 and SCE !
-
-    elif select_rate == ChargeType.ENERGY:
-        en_rate_list = open_ei_block['energyratestructure']
-
-        weekdays_schedule = open_ei_block['energyweekdayschedule']
-        weekends_schedule = open_ei_block['energyweekendschedule']
-
-        for m_i in range(12):
-
-            already_added = False
-            daily_weekdays_rate = map(lambda(x): en_rate_list[x][0]['rate'], weekdays_schedule[m_i])
-            daily_weekends_rate = map(lambda (x): en_rate_list[x][0]['rate'], weekends_schedule[m_i])
-
-            # Check if this schedule is already present
-            for m_group_lab, m_group_data in rate_struct.items():
-                if daily_weekdays_rate == m_group_data[TouRateSchedule.DAILY_RATE_KEY]['weekdays'][TouRateSchedule.RATES_KEY] and daily_weekends_rate == m_group_data[TouRateSchedule.DAILY_RATE_KEY]['weekends'][TouRateSchedule.RATES_KEY] :
-                    m_group_data[TouRateSchedule.MONTHLIST_KEY].append(m_i+1)
-                    already_added = True
-                    break
-
-            if not already_added:
-                rate_struct['m_'+str(m_i+1)] = {TouRateSchedule.MONTHLIST_KEY: [m_i+1],
-                                                TouRateSchedule.DAILY_RATE_KEY: {
-                                                    'weekdays': {
-                                                       TouRateSchedule.DAYSLIST_KEY: [1, 2, 3, 4, 5],
-                                                       TouRateSchedule.RATES_KEY: daily_weekdays_rate
-                                                    },
-                                                    'weekends': {
-                                                       TouRateSchedule.DAYSLIST_KEY: [6, 0],
-                                                       TouRateSchedule.RATES_KEY: daily_weekends_rate}
-                                                }
-                                                }
     if rate_struct != {}:
         return TouRateSchedule(rate_struct)
     else:
         return None
+
+
+def get_flatdemand_obj_from_openei(open_ei_block):
+    map_month_label = {1: 'winter', 0: 'summer'}
+
+    rate_struct = {}
+    if 'flatdemandstructure' in open_ei_block.keys():  # there is a flat demand rate
+        dem_rate_list = open_ei_block['flatdemandstructure']
+        dem_time_schedule_month = open_ei_block['flatdemandmonths']
+
+        for rate_idx in range(len(dem_rate_list)):
+            months_list = [i + 1 for i, j in enumerate(dem_time_schedule_month) if j == rate_idx]
+            rate_struct[map_month_label[rate_idx]] = {TouRateSchedule.MONTHLIST_KEY: months_list,
+                                                      TouRateSchedule.DAILY_RATE_KEY: {
+                                                          'allweek': {
+                                                              TouRateSchedule.DAYSLIST_KEY: range(7),
+                                                              TouRateSchedule.RATES_KEY: 24 * [
+                                                                  dem_rate_list[rate_idx][0]['rate']]
+                                                          }
+                                                      }
+                                                      }
+
+    if rate_struct != {}:
+        return TouRateSchedule(rate_struct)
+    else:
+        return None
+
+
+def get_demandrate_obj_from_openei(open_ei_block):
+
+    # TODO later: use BlockRate instead of assuming it's a float !
+    if 'demandratestructure' not in open_ei_block.keys():
+        return None
+
+    demand_rate_list = open_ei_block['demandratestructure']
+
+    weekdays_schedule = open_ei_block['demandweekdayschedule']
+    weekends_schedule = open_ei_block['demandweekendschedule']
+
+    rate_struct = read_tou_rates(demand_rate_list, weekdays_schedule, weekends_schedule)
+
+    if rate_struct != {}:
+        return TouRateSchedule(rate_struct)
+    else:
+        return None
+
+
+def read_tou_rates(rate_map, weekdays_schedule, weekends_schedule):
+
+    ret = {}
+
+    for m_i in range(12):
+
+        already_added = False
+        daily_weekdays_rate = map(lambda (x): rate_map[x][0]['rate'], weekdays_schedule[m_i])
+        daily_weekends_rate = map(lambda (x): rate_map[x][0]['rate'], weekends_schedule[m_i])
+
+        # Check if this schedule is already present
+        for m_group_lab, m_group_data in ret.items():
+            if daily_weekdays_rate == m_group_data[TouRateSchedule.DAILY_RATE_KEY]['weekdays'][
+                TouRateSchedule.RATES_KEY] and daily_weekends_rate == \
+                    m_group_data[TouRateSchedule.DAILY_RATE_KEY]['weekends'][TouRateSchedule.RATES_KEY]:
+                m_group_data[TouRateSchedule.MONTHLIST_KEY].append(m_i + 1)
+                already_added = True
+                break
+
+        if not already_added:
+            ret['m_' + str(m_i + 1)] = {TouRateSchedule.MONTHLIST_KEY: [m_i + 1],
+                                                TouRateSchedule.DAILY_RATE_KEY: {
+                                                    'weekdays': {
+                                                        TouRateSchedule.DAYSLIST_KEY: [1, 2, 3, 4, 5],
+                                                        TouRateSchedule.RATES_KEY: daily_weekdays_rate
+                                                    },
+                                                    'weekends': {
+                                                        TouRateSchedule.DAYSLIST_KEY: [6, 0],
+                                                        TouRateSchedule.RATES_KEY: daily_weekends_rate}
+                                                }
+                                                }
+
+    return ret
