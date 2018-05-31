@@ -327,12 +327,14 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 else:
                     max_power_period = df_day[date_max_period] / metric_unit_mult
 
-                print "Max power: {0} ".format(max_power_period)
-                print "Max power type object: {0} ".format(type(max_power_period))
-
                 # Search for the same mask and update the value if a new mask
+                mask_price24h = mask_price
+                if len(mask_price) != len(daily_rate):  # if this price is already in the list, take the corresponding mask ...
+                    if price_key in max_per_set.keys():
+                        mask_price24h = max_per_set[price_key]['mask']
+
                 add_this_demand = True
-                existing_mask_price = [k for k, v in max_per_set.items() if v['mask'] == mask_price]
+                existing_mask_price = [k for k, v in max_per_set.items() if v['mask'] == mask_price24h]
                 if len(existing_mask_price) > 0:  # Find the identical mask over the day
                     existing_mask_price = existing_mask_price[0]
                     if max_power_period > max_per_set[existing_mask_price]['max-demand']:  # Check if the corresponding demand is greater
@@ -343,9 +345,13 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
                     max_power_scaled = max_power_period
-
                     max_power_date = date_max_period.to_pydatetime()
-                    max_per_set[metric_price_mult * day_p] = {'mask': mask_price, 'max-demand': max_power_scaled, 'max-demand-date': max_power_date}
+
+                    # The mask must be 24 hour long:
+                    # it might not be the case for the first and last day, and the DST
+                    price_key = metric_price_mult * day_p
+
+                    max_per_set[price_key] = {'mask': mask_price24h, 'max-demand': max_power_scaled, 'max-demand-date': max_power_date}
 
         return max_per_set
 
