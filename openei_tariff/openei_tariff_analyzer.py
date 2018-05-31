@@ -1,7 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
 #bill_calculator_lib.
-from cost_calculator.tariff_structure import *
-from cost_calculator.rate_structure import *
+from bill_calculator_lib.cost_calculator.tariff_structure import *
+from bill_calculator_lib.cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
@@ -11,7 +11,8 @@ import pytz
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
-THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
+THIS_PATH = 'bill_calculator_lib/'+'openei_tariff/' #'bill_calculator_lib/'+
+PDP_PATH = './'
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
 
 class OpenEI_tariff(object):
@@ -272,7 +273,7 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
     # Analyse PdP events
     pdp_data = []
     try:
-        with open(THIS_PATH+pdp_event_filenames, 'r') as pdp_file:
+        with open(PDP_PATH+pdp_event_filenames, 'r') as pdp_file:
             try:
                 pdp_data = json.load(pdp_file)
             except ValueError:
