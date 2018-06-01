@@ -15,8 +15,8 @@ class TariffType(Enum):
     DEMAND_CUSTOM_CHARGE_SEASON = 'customer_demand_charge_season',
     DEMAND_CUSTOM_CHARGE_TOU = 'customer_demand_charge_tou',
     PDP_ENERGY_CHARGE = 'pdp_event_energy_charge',
-    PDP_ENERGY_CREDIT = 'pdp_non_event_energy_charge',
-    PDP_DEMAND_CREDIT = 'pdp_non_event_demand_charge',
+    PDP_ENERGY_CREDIT = 'pdp_non_event_energy_credit',
+    PDP_DEMAND_CREDIT = 'pdp_non_event_demand_credit',
 
 
 class TariffElemPeriod(Enum):

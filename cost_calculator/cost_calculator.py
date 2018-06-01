@@ -37,7 +37,7 @@ class CostCalculator(object):
         """
         Initialize the class instance
 
-        :param type_tariffs_list: [optional] a dictionary that map the main type of tariffs used to describe the whole
+        :param type_tariffs_map: [optional] a dictionary that map the main type of tariffs used to describe the whole
         billing logic to their type. DEFAULT_TARIFF_TYPE_LIST is used if type_tariffs_list is not specified.
 
         Note: the method 'add_tariff' is used to build the core "tariff_structure" object structure.
@@ -67,15 +67,20 @@ class CostCalculator(object):
     def compute_bill(self, df, column_data=None, monthly_detailed=False):
         """
         #TODO: create a class for the bill !
+
         Return the bill corresponding to the electricity data in a data frame:
 
         {
-            "label1": (int or float, float),    -> the metric associated to the label1 and the corresponding cost (in $) in the month
-            "label2": (int or float, float),    -> the metric associated to the label2 and the corresponding cost (in $) in the month
+            "label1": cost_detail_1
+            "label2": cost_detail_2
             ...
         }
 
-        where label_i corresponds to a type of tariff in the Enum TariffType
+        where:
+         - keys label_i corresponds to a type of tariff in the Enum TariffType and the values
+         - values cost_detail_i has one of the following form:
+            - if ENERGY or FIX tariff: cost_detail_i = (metric, cost) where metric is either the total energy or the period
+            - if DEMAND: cost_detail_i is dict where the keys are the price per kW and the values are tuples: (period-mask, max-power-value, max-power-date)
 
         if monthly_detailed is set to True, the bill is detailed for each month:
 
@@ -90,6 +95,9 @@ class CostCalculator(object):
 
         :param df: a pandas dataframe containing power consumption (in W) in the column 'column_data'.
         If column data is None, it is assumed that only 1 column makes up the df
+        :param column_data: [optional] the label of the column containing the power consumption values
+        :param monthly_detailed: [optional] if False, it is assumed that the df contains values for ONE billing period.
+        if True, the bill is detailed for each month of the calendar. Set to False by default.
         :return: a dictionary representing the bill as described above
         """
 
@@ -126,7 +134,8 @@ class CostCalculator(object):
         """
 
         This function creates the electricity price signal for the specified time frame 'range_date', sampled at 'timestep'
-        period.
+        period. It returns a pandas dataframes where the columns point to each type of tariff, specified in the argument
+        'type_tariffs_map' of the constructor.
 
         :param range_date: a tuple (t_start, t_end) of type 'datetime', representing the period
         :param timestep: an element of TariffElemPeriod enumeration (1h, 30min or 15min), representing the sampling
@@ -135,7 +144,7 @@ class CostCalculator(object):
         :return: a tuple (pd_prices, map_prices) containing:
             - pd_prices: a pandas dataframe whose index is a datetime index and containing as many cols as there are
         type_tariffs_map elements, i.e. the same keys as in __tariffstructures
-            - map_prices: a mapping between the cols label and the type of tariff (fix, energy or demand)
+            - map_prices: a mapping between the cols label and the type of tariff (fix, energy or demand), being of type 'ChargeType'
         """
 
         # Prepare the Pandas dataframe
@@ -145,6 +154,10 @@ class CostCalculator(object):
         # Populate the dataframe for each label, for each period
         ret_df = None
         for label_tariff in self.__tariffstructures.keys():
+
+            if self.type_tariffs_map[label_tariff] == ChargeType.FIXED:  # fixed charges not in the elec price signal
+                continue
+
             df_for_label = self.get_price_in_range(label_tariff, range_date, timestep)
 
             if ret_df is None:
@@ -181,38 +194,22 @@ class CostCalculator(object):
 
             price_for_this_period = tariff_block.get_price_from_timestamp(date)
 
-            # TODO: map instead of ifs ..
-
-            # Compute ratio to scale wrt 1h
-
-            ratio_sel_timestep = 4.0  # supposed to be 15 min
-
-            if timestep == TariffElemPeriod.HALFLY:
-                ratio_sel_timestep = 2.0
-            elif timestep == TariffElemPeriod.HOURLY:
-                ratio_sel_timestep = 1.0
-
-            tariff_metric_period = tariff_block.period_metric()
-
-            ratio_tariff_timestep = 4.0  # supposed to be 15 min
-
-            if tariff_metric_period == TariffElemPeriod.HALFLY:
-                ratio_tariff_timestep = 2.0
-            elif tariff_metric_period == TariffElemPeriod.HOURLY:
-                ratio_tariff_timestep = 1.0
-            elif tariff_metric_period == TariffElemPeriod.DAILY:
-                ratio_tariff_timestep = 1/24.0
-            elif tariff_metric_period == TariffElemPeriod.MONTHLY:
-                nb_days_in_this_month = calendar.monthrange(date.year, date.month)[1]
-                ratio_tariff_timestep = 1/24.0 * 1/nb_days_in_this_month
-
-            price_scaled = price_for_this_period / ratio_sel_timestep * ratio_tariff_timestep
-
-            ret_df.loc[date, label_tariff] = price_scaled
+            ret_df.loc[date, label_tariff] = price_for_this_period
 
         return ret_df
 
-    def print_aggregated_bill(self, bill_struct):
+    def print_aggregated_bill(self, bill_struct, verbose=True):
+        """
+        This method help manipulating the bill returned by compute_bill().
+        It takes the bill as an argument and return a tuple (t, tt, ttt):
+         - t is the total cost
+         - tt is the total cost per type of tariff (energy, fix, demand)
+         - ttt is the cost for each tariff label
+
+        :param bill_struct: the dictionary returned by compute_bill()
+        :param verbose: [optional, default is True] print details
+        :return:
+        """
 
         monthly_detailed = False
 
@@ -256,19 +253,20 @@ class CostCalculator(object):
 
             acc_per_label = bill_struct
 
-        # Total
-        print("\n| Aggregated bill: {0} ($)".format(acc_tot))
+        if verbose:
+            # Total
+            print("\n| Aggregated bill: {0} ($)".format(acc_tot))
 
-        # Per type
-        print("\n| Total bill per type of charge:")
-        for t_key, v in acc_per_chargetype.items():
-            print(" - Charge type '{0}': {1} ($)".format(str(t_key.value[0]), v))
+            # Per type
+            print("\n| Total bill per type of charge:")
+            for t_key, v in acc_per_chargetype.items():
+                print(" - Charge type '{0}': {1} ($)".format(str(t_key.value[0]), v))
 
-        # Per label
-        print("\n| Total bill per type or tariff:")
-        for l_key, v in acc_per_label.items():
-            # TODO: print nicely the details
-            print(" - Type '{0}': {1} ($)".format(str(l_key), v))
+            # Per label
+            print("\n| Total bill per type or tariff:")
+            for l_key, v in acc_per_label.items():
+                # TODO: print nicely the details
+                print(" - Type '{0}': {1} ($)".format(str(l_key), v))
 
         return acc_tot, acc_per_chargetype, acc_per_label
 
@@ -349,7 +347,7 @@ class CostCalculator(object):
                 if len(existing_mask_price) > 0:  # this mask has already been seen: APPLY MAX
                     existing_mask_price = existing_mask_price[0]
                     if new_data[p]['max-demand'] > intermediate_monthly_bill[label_tariff][existing_mask_price]['max-demand']:
-                        print("Demand rate update: for mask {0}, {0} is greater than {2}".format(this_mask, new_data[p]['max-demand'], intermediate_monthly_bill[label_tariff][existing_mask_price]['max-demand'])) # debug
+                        #print("Demand rate update: for mask {0}, {0} is greater than {2}".format(this_mask, new_data[p]['max-demand'], intermediate_monthly_bill[label_tariff][existing_mask_price]['max-demand'])) # debug
 
                         del intermediate_monthly_bill[label_tariff][existing_mask_price]
                         intermediate_monthly_bill[label_tariff][p] = new_data[p]
@@ -380,7 +378,7 @@ class CostCalculator(object):
                             if len(existing_mask_price) > 0:  # this mask has already been seen: APPLY MAX
                                 existing_mask_price = existing_mask_price[0]
                                 if data['max-demand'] > data_merge[label_tariff][existing_mask_price]['max-demand']:
-                                    print("Demand rate update: for mask {1}, {0} is greater than {2}".format(this_mask, data, data_merge[label_tariff][p]))  # debug
+                                    #print("Demand rate update: for mask {1}, {0} is greater than {2}".format(this_mask, data, data_merge[label_tariff][p]))  # debug
                                     del data_merge[label_tariff][existing_mask_price]
                                     data_merge[label_tariff][p] = data
                             else:  # This is the first time this price has been seen: store it
