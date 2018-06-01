@@ -200,7 +200,7 @@ class CostCalculator(object):
 
     def print_aggregated_bill(self, bill_struct, verbose=True):
         """
-        This method help manipulating the bill returned by compute_bill().
+        This method helps manipulating the bill returned by compute_bill().
         It takes the bill as an argument and return a tuple (t, tt, ttt):
          - t is the total cost
          - tt is the total cost per type of tariff (energy, fix, demand)
