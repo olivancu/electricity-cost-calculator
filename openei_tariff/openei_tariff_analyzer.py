@@ -1,7 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
 #bill_calculator_lib.
-from bill_calculator_lib.cost_calculator.tariff_structure import *
-from bill_calculator_lib.cost_calculator.rate_structure import *
+from cost_calculator.tariff_structure import *
+from cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
@@ -11,7 +11,7 @@ import pytz
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
-THIS_PATH = 'bill_calculator_lib/'+'openei_tariff/' #'bill_calculator_lib/'+
+THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
 PDP_PATH = './'
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
 
@@ -366,11 +366,11 @@ def read_tou_rates(rate_map, weekdays_schedule, weekends_schedule):
             ret['m_' + str(m_i + 1)] = {TouRateSchedule.MONTHLIST_KEY: [m_i + 1],
                                                 TouRateSchedule.DAILY_RATE_KEY: {
                                                     'weekdays': {
-                                                        TouRateSchedule.DAYSLIST_KEY: [1, 2, 3, 4, 5],
+                                                        TouRateSchedule.DAYSLIST_KEY: [0, 1, 2, 3, 4],
                                                         TouRateSchedule.RATES_KEY: daily_weekdays_rate
                                                     },
                                                     'weekends': {
-                                                        TouRateSchedule.DAYSLIST_KEY: [6, 0],
+                                                        TouRateSchedule.DAYSLIST_KEY: [5, 6],
                                                         TouRateSchedule.RATES_KEY: daily_weekends_rate}
                                                 }
                                                 }
