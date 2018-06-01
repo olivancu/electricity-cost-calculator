@@ -12,7 +12,7 @@ import pytz
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
 THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
-PDP_PATH = './'
+PDP_PATH = 'openei_tariff/'  # './'
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
 
 class OpenEI_tariff(object):
@@ -283,7 +283,6 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
 
     pdp_data_filter = [event for event in pdp_data if event['utility_id'] == int(openei_tarif_obj.req_param['eia'])]
     for pdp_event in pdp_data_filter:
-        print(pdp_event)
         pdp_dates = datetime.strptime(pdp_event['start_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC')), datetime.strptime(
             pdp_event['end_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC'))
         tariff_pdp_obj = get_pdp_energycharge(openei_tarif_obj, pdp_dates[0])
