@@ -317,10 +317,18 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 mask_price = mask_price.tolist()
                 mask_price_index = df_prices.loc[mask_price, 'date']
 
+                date_max_period = None
                 if data_col is not None:
-                    date_max_period = df_day.loc[mask_price_index, data_col].idxmax()
+                    df_masked = df_day.loc[mask_price_index, data_col]
+                    if len(df_masked) > 0:
+                        date_max_period = df_masked.idxmax()
                 else:
-                    date_max_period = df_day.loc[mask_price_index].idxmax()
+                    df_masked = df_day.loc[mask_price_index]
+                    if len(df_masked) > 0:
+                        date_max_period = df_masked.idxmax()
+
+                if date_max_period is None:
+                    continue
 
                 if data_col is not None:
                     max_power_period = df_day.loc[date_max_period, data_col] / metric_unit_mult
@@ -345,7 +353,11 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
                     max_power_scaled = max_power_period
-                    max_power_date = date_max_period.to_pydatetime()
+                    if data_col is not None:
+                        max_power_date = date_max_period[data_col].to_pydatetime()
+                    else:
+                        max_power_date = date_max_period.to_pydatetime()
+
 
                     # The mask must be 24 hour long:
                     # it might not be the case for the first and last day, and the DST
