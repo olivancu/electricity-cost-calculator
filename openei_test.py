@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     print("--- Loading meter data ...")
 
-    meter_uuid = '4c95836f-6bdb-3adc-ac5e-4c787ae027c7'
+    meter_uuid = '4d95d5ce-de62-3449-bd58-4dcad75b526d'
     print("Data from GreenButton meter uuid '{0}'".format(meter_uuid))
 
     df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
@@ -128,8 +128,8 @@ if __name__ == '__main__':
     #start_date_bill = datetime(2017, 7, 23, hour=0, minute=0, second=0)
     #end_date_bill = datetime(2017, 8, 21, hour=23, minute=59, second=59)
 
-    start_date_bill = datetime(2017, 3, 12, hour=0, minute=0, second=0)
-    end_date_bill = datetime(2017, 4, 12, hour=23, minute=59, second=59)
+    start_date_bill = datetime(2017, 7, 1, hour=0, minute=0, second=0)
+    end_date_bill = datetime(2017, 7, 31, hour=23, minute=59, second=59)
 
     mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
     data_meter = data_meter.loc[mask]
@@ -138,12 +138,16 @@ if __name__ == '__main__':
     # 1) Get the bill over the period
     print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
     bill = bill_calc.compute_bill(data_meter)
-    print(bill)
-    t, tt, ttt = bill_calc.print_aggregated_bill(bill)
+
+    t, tt, ttt = bill_calc.print_aggregated_bill(bill, True)
 
     # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
 
-    timestep = TariffElemPeriod.HOURLY  # We want a 1h period
+    timestep = TariffElemPeriod.QUARTERLY  # We want a 1h period
 
-    #price_elec, map = bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
-    #print list(price_elec.loc[:, 'customer_energy_charge'])
+    price_elec, map = bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
+    print list(price_elec.loc[:, 'customer_energy_charge'])
+
+    price_elec.plot()
+    plt.grid()
+    plt.show()
