@@ -5454,7 +5454,21 @@
   {
     "approved": true, 
     "basicinformationcomments": "The fixed monthly charge include the customer charge mandatory ($19.71253*365/12). Customer charge voluntary -with smartmeter ($4.59959 *365/12)", 
-    "country": "USA", 
+    "country": "USA",
+    "flatdemandmonths": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     "flatdemandstructure": [
       [
         {
@@ -6807,7 +6821,21 @@
   {
     "approved": true, 
     "basicinformationcomments": "The fixed monthly charge include the customer charge mandatory ($19.71253*365/12). Customer charge voluntary -with smartmeter ($4.59959 *365/12)", 
-    "country": "USA", 
+    "country": "USA",
+    "flatdemandmonths": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     "flatdemandstructure": [
       [
         {
@@ -8182,7 +8210,21 @@
           "rate": -5.92
         }
       ]
-    ], 
+    ],
+    "flatdemandmonths": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     "flatdemandstructure": [
       [
         {
@@ -9593,7 +9635,21 @@
   {
     "approved": true, 
     "basicinformationcomments": "The fixed monthly charge include the customer charge mandatory ($19.71253*365/12). Customer charge voluntary -with smartmeter ($4.59959 *365/12)", 
-    "country": "USA", 
+    "country": "USA",
+    "flatdemandmonths": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     "flatdemandstructure": [
       [
         {
