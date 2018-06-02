@@ -338,6 +338,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # Search for the same mask and update the value if a new mask
                 mask_price24h = mask_price
                 if len(mask_price) != len(daily_rate):  # if this price is already in the list, take the corresponding mask ...
+                    price_key = metric_price_mult * day_p
                     if price_key in max_per_set.keys():
                         mask_price24h = max_per_set[price_key]['mask']
 
