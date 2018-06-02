@@ -90,11 +90,21 @@ The TOU tariff object can then be instanciated. Let's assume this tariff is vali
   tariffObj = TouRateSchedule((date_start, date_end), rate_tou)
 ```
 
-# From OpenEI tariff to the Bill Calculator
+## From OpenEI tariff to the Bill Calculator
 
 TODO
 
-## Run the test file
+# Bill Calculator methods
+
+## Compute the billl
+
+TODO
+
+## Get the prices signal over a period
+
+TODO
+
+# OpenEI test file
 
 `python openei_test.py`
 
