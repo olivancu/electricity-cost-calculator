@@ -354,7 +354,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
                     max_power_scaled = max_power_period
-                    if data_col is not None:
+                    if type(date_max_period) is not pd.Timestamp:
                         max_power_date = date_max_period[data_col].to_pydatetime()
                     else:
                         max_power_date = date_max_period.to_pydatetime()
