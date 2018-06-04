@@ -92,22 +92,57 @@ The TOU tariff object can then be instanciated. Let's assume this tariff is vali
 
 ## From OpenEI tariff to the Bill Calculator
 
-TODO
+This packages provides a set of functions to pull utility tariffs from the OpenEI API (https://openei.org/services/) and create the corresponding tariff objects to be added to the CostCalculator object.
+The first step consists in creating an OpenEI_tariff that describes the tariff in use. Here is an example for PG&E A-10 TOU at the Secondary level:
+
+```python
+  openei_tariff_data = OpenEI_tariff(utility_id='14328', sector='Commercial', tariff_rate_of_interest='A-10', distrib_level_of_interest='Secondary', tou=True),
+```
+The second step is to call the API:
+
+```python
+  openei_tariff_data.call_api()
+```
+
+This method processes the raw data coming from the API and select only the tariff of interest.
+The last step populates the CostCalculator object based on the OpenEI data:
+
+```python
+  bill_calculator = CostCalculator()
+  tariff_struct_from_openei_data(openei_tariff_data, bill_calculator)
+```
+
+### OpenEI tariff revision
+
+The data got from the OpenEI API might not be up-to-date or contain errors. In this case, the user might save the post-processed API call to a JSON file:
+
+```python
+  openei_tariff.call_api(store_as_json=True)
+```
+The user can then revise the blocks of the "tariff_yyyy.json" and save it to "tariff_yyyy_revised.json". This json file can now be used, instead of the OpenEI API call:
+
+```python
+  tariff_openei_data.read_from_json()
+```
 
 # Bill Calculator methods
 
-## Compute the billl
+## Compute the bill
 
-TODO
+```python
+  bill = bill_calculator.compute_bill(data_meter)
+```
 
 ## Get the prices signal over a period
 
-TODO
+```python
+  date_range = (startdate, endate)
+  timestep = TariffElemPeriod.QUARTERLY
+  bill = bill_calculator.get_electricity_price(date_range, timestep)
+```
 
 # OpenEI test file
 
 `python openei_test.py`
 
 This outputs the bill linked to an energy meter of a building, given a specific tariff. 
-
-TODO: 
