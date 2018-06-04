@@ -10,34 +10,34 @@ import pandas as pd
 
 
 class TariffType(Enum):
-    FIX_CUSTOM_CHARGE = 'customer_fix_charge',
-    ENERGY_CUSTOM_CHARGE = 'customer_energy_charge',
-    DEMAND_CUSTOM_CHARGE_SEASON = 'customer_demand_charge_season',
-    DEMAND_CUSTOM_CHARGE_TOU = 'customer_demand_charge_tou',
-    PDP_ENERGY_CHARGE = 'pdp_event_energy_charge',
-    PDP_ENERGY_CREDIT = 'pdp_non_event_energy_credit',
-    PDP_DEMAND_CREDIT = 'pdp_non_event_demand_credit',
+    FIX_CUSTOM_CHARGE = 'customer_fix_charge'
+    ENERGY_CUSTOM_CHARGE = 'customer_energy_charge'
+    DEMAND_CUSTOM_CHARGE_SEASON = 'customer_demand_charge_season'
+    DEMAND_CUSTOM_CHARGE_TOU = 'customer_demand_charge_tou'
+    PDP_ENERGY_CHARGE = 'pdp_event_energy_charge'
+    PDP_ENERGY_CREDIT = 'pdp_non_event_energy_credit'
+    PDP_DEMAND_CREDIT = 'pdp_non_event_demand_credit'
 
 
 class TariffElemPeriod(Enum):
 
-    MONTHLY = 'M',
-    DAILY = 'D',
-    HOURLY = '1h',
-    HALFLY = '30min',
-    QUARTERLY = '15min',
+    MONTHLY = 'M'
+    DAILY = 'D'
+    HOURLY = '1h'
+    HALFLY = '30min'
+    QUARTERLY = '15min'
 
 
 class TariffElemMetricUnit(Enum):
-    EN_WH = 1,
-    DEMAND_W = 1,
-    EN_KWH = 1000.0,
-    DEMAND_KW = 1000.0,
+    EN_WH = 1
+    DEMAND_W = 1
+    EN_KWH = 1000.0
+    DEMAND_KW = 1000.0
 
 
 class TariffElemCostUnit(Enum):
-    CENT = 0.01,
-    DOLLAR = 1,
+    CENT = 0.01
+    DOLLAR = 1
 
 
 class TariffBase(object):
@@ -278,8 +278,8 @@ class TouDemandChargeTariff(TimeOfUseTariff):
         """
 
         # Scaling the power unit and cost
-        metric_unit_mult = float(self.unit_metric.value[0])
-        metric_price_mult = float(self.unit_cost.value[0])
+        metric_unit_mult = float(self.unit_metric.value)
+        metric_price_mult = float(self.unit_cost.value)
 
         # TODO check the period of the data ! It has been assumed that mean(P_per) = E_per
         # The logic is to get the TOU demand price and split it in different periods, according to the mask
@@ -418,8 +418,8 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
             df_prices.set_index('date')
 
             # Unit and cost scale
-            mult_energy_unit = float(self.unit_metric.value[0])
-            mult_cost_unit = float(self.unit_cost.value[0])
+            mult_energy_unit = float(self.unit_metric.value)
+            mult_cost_unit = float(self.unit_cost.value)
 
             # Cumulate the energy over the month
 
