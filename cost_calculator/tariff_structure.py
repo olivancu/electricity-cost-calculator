@@ -253,6 +253,20 @@ class TimeOfUseTariff(TariffBase):
         # TODO: scale with the unit
         return self.__schedule.get_from_timestamp(timestamp)
 
+    @staticmethod
+    def get_daily_price_dataframe(daily_rate, df_day):
+
+        # Constructing the dataframe for an easier manipulation of time
+        period_rate = len(daily_rate) / 24.0
+
+        # In some cases the day might not be full: missing data or DST
+        daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period_rate)] for i in range(len(df_day.index))]
+        data = {'date': df_day.index[:], 'price': daily_prices}
+        df_prices = pd.DataFrame(data=data)
+        df_prices.set_index('date')
+
+        return df_prices
+
 
 class TouDemandChargeTariff(TimeOfUseTariff):
     """
@@ -291,24 +305,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
 
             set_of_daily_prices = set(daily_rate)
-
-            # Constructing the dataframe for an easier manipulation of time
-            period_rate = len(daily_rate) / 24.0
-
-            # TODO: remove if's ...
-            freq_per = '1h'
-            if period_rate == 1: # 1 hour
-                freq_per = '1h'
-            elif period_rate == 2:
-                freq_per = '30min'
-            elif period_rate == 4:
-                freq_per = '15min'
-
-            # In some cases the day might not be full: missing data or DST
-            daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period_rate)] for i in range(len(df_day.index)) ]
-            data = {'date': df_day.index[:], 'price': daily_prices}
-            df_prices = pd.DataFrame(data=data)
-            df_prices.set_index('date')
+            df_prices = self.get_daily_price_dataframe(daily_rate, df_day)
 
             for day_p in set_of_daily_prices:
 
@@ -400,22 +397,7 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
         for idx, df_day in df.groupby(df.index.date):
 
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
-            period = len(daily_rate) / 24.0
-
-            # TODO: remove if's ...
-            freq_per = '1h'
-            if period == 1: # 1 hour
-                freq_per = '1h'
-            elif period == 2:
-                freq_per = '30min'
-            elif period == 4:
-                freq_per = '15min'
-
-            daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period)] for i in range(len(df_day.index)) ]
-            data = {'date': df_day.index[:], 'price': daily_prices}
-
-            df_prices = pd.DataFrame(data=data)
-            df_prices.set_index('date')
+            df_prices = self.get_daily_price_dataframe(daily_rate, df_day)
 
             # Unit and cost scale
             mult_energy_unit = float(self.unit_metric.value)
@@ -434,3 +416,4 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
             cost += sum(mult_cost_unit * df_values_in_day.multiply(df_prices.loc[:, 'price'].tolist())) / mult_energy_unit
 
         return energy, cost
+
