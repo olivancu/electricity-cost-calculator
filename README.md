@@ -1,14 +1,14 @@
 # Project description
 
-The Bill Calculator tool intends to provide a generic tool - at least for US - for manipulating the tariffs of electricity. A tariff is composed of various type of charges and credits, that fall into one of the following rate type:
+The Bill Calculator tool intends to provide a generic tool for manipulating the tariffs of electricity, with a emphasis on US tariffs. A tariff is composed of various type of charges and credits, that fall into one of the following rate type:
 
- - FIXED: a fixed charge, generally expressed in $/day or $/month
- - ENERGY: a charge per energy consumption, generally expressed in $/kWh. This charge may vary during the day, and be different for each month
- - DEMAND: a charge per demand, generally expressed in $/kW. The demand is defined as the maximum of the power consumption average over 15 minutes, taken over the whole billing period.
+ - *FIXED*: a fixed charge, generally expressed in $/day or $/month.
+ - *ENERGY*: a charge per energy consumption, generally expressed in $/kWh. This charge may vary during the day, and may be different for each month.
+ - *DEMAND*: a charge per demand, generally expressed in $/kW. The demand is defined as the maximum of the power consumption average over 15 minutes, taken over the whole billing period. The demand may also be applied to specific hours of the day.
 
-The tool aims to wrap up the complexity of the bill calculation, that can include together Time Of Use energy, flat demand, Time Of Use demand, Peak Pricing Day charges, non-Peak Pricing Day credits, etc.
+The tool aims to wrap up the complexity of the bill calculation, that can include Time Of Use energy, flat demand, Time Of Use demand, Peak Pricing Day charges, non-Peak Pricing Day credits, etc.
 
-The folder 'cost_calculator' contains the source code of the Bill Calculator 
+The folder 'cost_calculator' contains the source code of the Bill Calculator. The rest of the README describes how to instanciate the main classes and their useful methods.
 
 ## Packages dependency
 
