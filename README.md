@@ -10,6 +10,10 @@ The tool aims to wrap up the complexity of the bill calculation, that can includ
 
 The folder 'cost_calculator' contains the source code of the Bill Calculator 
 
+## Packages dependency
+
+pandas, holidays, datetime, enum, pytz, requests
+
 # Bill Calculator creation
 
 In order to use the tool, one must instanciate the CostCalculator.
@@ -129,11 +133,22 @@ The user can then revise the blocks of the "tariff_yyyy.json" and save it to "ta
 
 ## Compute the bill
 
+Given a pandas dataframe 'data_meter' that maps date indexes to power consumption (in W), the following method computes the bill linked to the encoded tariff:
+
 ```python
   bill = bill_calculator.compute_bill(data_meter)
 ```
+The returned structure is a dictionary that maps a cost and a metric for each type of tariff. See the method signature for further details.
+
+Optional arguments can be specified:
+
+ - 'column_data': select a specific column in the dataframe. Leave it when the dataframe only contains one column.
+ - 'monthly_detailed': False by default, assuming that the billing period spans over the whole dataframe. Set if to True to map a bill for each month in the dataframe.
+
 
 ## Get the prices signal over a period
+
+The following method returns a pandas dataframe mapping the dates in 'date_range' to the price of electricity, sampled at a period 'timestep'. The dataframe columns points to each type of tariff
 
 ```python
   date_range = (startdate, endate)
