@@ -180,21 +180,15 @@ class CostCalculator(object):
         date_range = pd.date_range(start=start_date_price, end=end_date_price, freq=str(timestep.value))
         ret_df = pd.DataFrame(index=date_range, columns=[label_tariff])
 
-        # Select the corresponding blocks
-
-        # Get the price for the period
-        for date, row in ret_df.iterrows():
-            date_range_period = pd.date_range(start=date, periods=2, freq=date.freq)
+        # # Select the corresponding blocks for each day and generate the time dataframe
+        for idx_day, df_day in ret_df.groupby(ret_df.index.date):
+            date_range_period = pd.date_range(start=df_day.index[0], periods=2, freq=str(timestep.value))
             tariff_block = self.get_tariff_struct(label_tariff, (date_range_period[0], date_range_period[1]))
 
-            if len(tariff_block) == 0:
-                continue
-
-            tariff_block = tariff_block[0]
-
-            price_for_this_period = tariff_block.get_price_from_timestamp(date)
-
-            ret_df.loc[date, label_tariff] = price_for_this_period
+            if len(tariff_block) > 0:
+                daily_rate = tariff_block[0].rate_schedule.get_daily_rate(df_day.index[0])
+                rate_df = tariff_block[0].get_daily_price_dataframe(daily_rate, df_day)
+                ret_df.loc[df_day.index[:], label_tariff] = rate_df['price'].values
 
         return ret_df
 
