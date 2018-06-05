@@ -10,34 +10,34 @@ import pandas as pd
 
 
 class TariffType(Enum):
-    FIX_CUSTOM_CHARGE = 'customer_fix_charge',
-    ENERGY_CUSTOM_CHARGE = 'customer_energy_charge',
-    DEMAND_CUSTOM_CHARGE_SEASON = 'customer_demand_charge_season',
-    DEMAND_CUSTOM_CHARGE_TOU = 'customer_demand_charge_tou',
-    PDP_ENERGY_CHARGE = 'pdp_event_energy_charge',
-    PDP_ENERGY_CREDIT = 'pdp_non_event_energy_credit',
-    PDP_DEMAND_CREDIT = 'pdp_non_event_demand_credit',
+    FIX_CUSTOM_CHARGE = 'customer_fix_charge'
+    ENERGY_CUSTOM_CHARGE = 'customer_energy_charge'
+    DEMAND_CUSTOM_CHARGE_SEASON = 'customer_demand_charge_season'
+    DEMAND_CUSTOM_CHARGE_TOU = 'customer_demand_charge_tou'
+    PDP_ENERGY_CHARGE = 'pdp_event_energy_charge'
+    PDP_ENERGY_CREDIT = 'pdp_non_event_energy_credit'
+    PDP_DEMAND_CREDIT = 'pdp_non_event_demand_credit'
 
 
 class TariffElemPeriod(Enum):
 
-    MONTHLY = 'M',
-    DAILY = 'D',
-    HOURLY = '1h',
-    HALFLY = '30min',
-    QUARTERLY = '15min',
+    MONTHLY = 'M'
+    DAILY = 'D'
+    HOURLY = '1h'
+    HALFLY = '30min'
+    QUARTERLY = '15min'
 
 
 class TariffElemMetricUnit(Enum):
-    EN_WH = 1,
-    DEMAND_W = 1,
-    EN_KWH = 1000.0,
-    DEMAND_KW = 1000.0,
+    EN_WH = 1
+    DEMAND_W = 1
+    EN_KWH = 1000.0
+    DEMAND_KW = 1000.0
 
 
 class TariffElemCostUnit(Enum):
-    CENT = 0.01,
-    DOLLAR = 1,
+    CENT = 0.01
+    DOLLAR = 1
 
 
 class TariffBase(object):
@@ -253,6 +253,20 @@ class TimeOfUseTariff(TariffBase):
         # TODO: scale with the unit
         return self.__schedule.get_from_timestamp(timestamp)
 
+    @staticmethod
+    def get_daily_price_dataframe(daily_rate, df_day):
+
+        # Constructing the dataframe for an easier manipulation of time
+        period_rate = len(daily_rate) / 24.0
+
+        # In some cases the day might not be full: missing data or DST
+        daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period_rate)] for i in range(len(df_day.index))]
+        data = {'date': df_day.index[:], 'price': daily_prices}
+        df_prices = pd.DataFrame(data=data)
+        df_prices.set_index('date')
+
+        return df_prices
+
 
 class TouDemandChargeTariff(TimeOfUseTariff):
     """
@@ -278,8 +292,8 @@ class TouDemandChargeTariff(TimeOfUseTariff):
         """
 
         # Scaling the power unit and cost
-        metric_unit_mult = float(self.unit_metric.value[0])
-        metric_price_mult = float(self.unit_cost.value[0])
+        metric_unit_mult = float(self.unit_metric.value)
+        metric_price_mult = float(self.unit_cost.value)
 
         # TODO check the period of the data ! It has been assumed that mean(P_per) = E_per
         # The logic is to get the TOU demand price and split it in different periods, according to the mask
@@ -291,24 +305,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
 
             set_of_daily_prices = set(daily_rate)
-
-            # Constructing the dataframe for an easier manipulation of time
-            period_rate = len(daily_rate) / 24.0
-
-            # TODO: remove if's ...
-            freq_per = '1h'
-            if period_rate == 1: # 1 hour
-                freq_per = '1h'
-            elif period_rate == 2:
-                freq_per = '30min'
-            elif period_rate == 4:
-                freq_per = '15min'
-
-            # In some cases the day might not be full: missing data or DST
-            daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period_rate)] for i in range(len(df_day.index)) ]
-            data = {'date': df_day.index[:], 'price': daily_prices}
-            df_prices = pd.DataFrame(data=data)
-            df_prices.set_index('date')
+            df_prices = self.get_daily_price_dataframe(daily_rate, df_day)
 
             for day_p in set_of_daily_prices:
 
@@ -354,7 +351,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
                     max_power_scaled = max_power_period
-                    if data_col is not None:
+                    if type(date_max_period) is not pd.Timestamp:
                         max_power_date = date_max_period[data_col].to_pydatetime()
                     else:
                         max_power_date = date_max_period.to_pydatetime()
@@ -400,26 +397,11 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
         for idx, df_day in df.groupby(df.index.date):
 
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
-            period = len(daily_rate) / 24.0
-
-            # TODO: remove if's ...
-            freq_per = '1h'
-            if period == 1: # 1 hour
-                freq_per = '1h'
-            elif period == 2:
-                freq_per = '30min'
-            elif period == 4:
-                freq_per = '15min'
-
-            daily_prices = [daily_rate[int((df_day.index[i].hour + df_day.index[i].minute / 60.0) * period)] for i in range(len(df_day.index)) ]
-            data = {'date': df_day.index[:], 'price': daily_prices}
-
-            df_prices = pd.DataFrame(data=data)
-            df_prices.set_index('date')
+            df_prices = self.get_daily_price_dataframe(daily_rate, df_day)
 
             # Unit and cost scale
-            mult_energy_unit = float(self.unit_metric.value[0])
-            mult_cost_unit = float(self.unit_cost.value[0])
+            mult_energy_unit = float(self.unit_metric.value)
+            mult_cost_unit = float(self.unit_cost.value)
 
             # Cumulate the energy over the month
 
@@ -434,3 +416,4 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
             cost += sum(mult_cost_unit * df_values_in_day.multiply(df_prices.loc[:, 'price'].tolist())) / mult_energy_unit
 
         return energy, cost
+

@@ -24,13 +24,13 @@ class CostCalculator(object):
     """
 
     # This default structure lists the tariffs type for most of the utilities in US
-    DEFAULT_TARIFF_MAP = {str(TariffType.FIX_CUSTOM_CHARGE.value[0]): ChargeType.FIXED,
-                          str(TariffType.ENERGY_CUSTOM_CHARGE.value[0]): ChargeType.ENERGY,
-                          str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value[0]): ChargeType.DEMAND,
-                          str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value[0]): ChargeType.DEMAND,
-                          str(TariffType.PDP_ENERGY_CHARGE.value[0]): ChargeType.ENERGY,
-                          str(TariffType.PDP_ENERGY_CREDIT.value[0]): ChargeType.ENERGY,
-                          str(TariffType.PDP_DEMAND_CREDIT.value[0]): ChargeType.DEMAND,
+    DEFAULT_TARIFF_MAP = {str(TariffType.FIX_CUSTOM_CHARGE.value): ChargeType.FIXED,
+                          str(TariffType.ENERGY_CUSTOM_CHARGE.value): ChargeType.ENERGY,
+                          str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value): ChargeType.DEMAND,
+                          str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value): ChargeType.DEMAND,
+                          str(TariffType.PDP_ENERGY_CHARGE.value): ChargeType.ENERGY,
+                          str(TariffType.PDP_ENERGY_CREDIT.value): ChargeType.ENERGY,
+                          str(TariffType.PDP_DEMAND_CREDIT.value): ChargeType.DEMAND,
                           }
 
     def __init__(self, type_tariffs_map=None):
@@ -149,7 +149,7 @@ class CostCalculator(object):
 
         # Prepare the Pandas dataframe
         (start_date_price, end_date_price) = range_date
-        date_list = pd.date_range(start=start_date_price, end=end_date_price, freq=str(timestep.value[0]))
+        date_list = pd.date_range(start=start_date_price, end=end_date_price, freq=str(timestep.value))
 
         # Populate the dataframe for each label, for each period
         ret_df = None
@@ -177,24 +177,18 @@ class CostCalculator(object):
 
         # Prepare the Pandas dataframe
         (start_date_price, end_date_price) = date_range
-        date_range = pd.date_range(start=start_date_price, end=end_date_price, freq=str(timestep.value[0]))
+        date_range = pd.date_range(start=start_date_price, end=end_date_price, freq=str(timestep.value))
         ret_df = pd.DataFrame(index=date_range, columns=[label_tariff])
 
-        # Select the corresponding blocks
-
-        # Get the price for the period
-        for date, row in ret_df.iterrows():
-            date_range_period = pd.date_range(start=date, periods=2, freq=date.freq)
+        # # Select the corresponding blocks for each day and generate the time dataframe
+        for idx_day, df_day in ret_df.groupby(ret_df.index.date):
+            date_range_period = pd.date_range(start=df_day.index[0], periods=2, freq=str(timestep.value))
             tariff_block = self.get_tariff_struct(label_tariff, (date_range_period[0], date_range_period[1]))
 
-            if len(tariff_block) == 0:
-                continue
-
-            tariff_block = tariff_block[0]
-
-            price_for_this_period = tariff_block.get_price_from_timestamp(date)
-
-            ret_df.loc[date, label_tariff] = price_for_this_period
+            if len(tariff_block) > 0:
+                daily_rate = tariff_block[0].rate_schedule.get_daily_rate(df_day.index[0])
+                rate_df = tariff_block[0].get_daily_price_dataframe(daily_rate, df_day)
+                ret_df.loc[df_day.index[:], label_tariff] = rate_df['price'].values
 
         return ret_df
 
@@ -260,7 +254,7 @@ class CostCalculator(object):
             # Per type
             print("\n| Total bill per type of charge:")
             for t_key, v in acc_per_chargetype.items():
-                print(" - Charge type '{0}': {1} ($)".format(str(t_key.value[0]), v))
+                print(" - Charge type '{0}': {1} ($)".format(str(t_key.value), v))
 
             # Per label
             print("\n| Total bill per type or tariff:")

@@ -20,6 +20,13 @@ map_site_to_tariff = {
                   distrib_level_of_interest='Secondary',
                   phasewing=None,
                   tou=True),
+    'a373b62e-04f3-3c1e-b27d-279f792f4b18': # Orinda Community Center
+    OpenEI_tariff(utility_id='14328',
+                  sector='Commercial',
+                  tariff_rate_of_interest='A-10',
+                  distrib_level_of_interest='Secondary',
+                  phasewing=None,
+                  tou=True),
     '4d95d5ce-de62-3449-bd58-4dcad75b526d':  # Recreational center
     OpenEI_tariff(utility_id='14328',
                   sector='Commercial',
@@ -43,6 +50,24 @@ map_site_to_tariff = {
                   phasewing=None,
                   tou=True,
                   option_exclusion=['Option R', 'Voluntary']),
+    'CSU-Dominguez-Hills':  # CSU Dominguez Hills
+    OpenEI_tariff(utility_id='17609',
+                  sector='Commercial',
+                  tariff_rate_of_interest='TOU-8',
+                  distrib_level_of_interest=None,  # Not specified in the API
+                  phasewing=None,
+                  tou=True,
+                  option_mandatory=['Option B', 'under 2 kV'],
+                  option_exclusion=['Option R']),
+    'Jesse-Turner-Fontana-Community-Center':  # Jesse Turner Fontana Community Center
+    OpenEI_tariff(utility_id='17609',
+                  sector='Commercial',
+                  tariff_rate_of_interest='TOU-GS-3',
+                  distrib_level_of_interest=None,  # Not specified in the API
+                  phasewing=None,
+                  tou=True,
+                  option_mandatory=['Option CPP', '2kV - 50kV'],
+                  option_exclusion=['Option B', 'Option A'])
 }
 
 # useful functions
@@ -80,7 +105,7 @@ if __name__ == '__main__':
 
     print("--- Loading meter data ...")
 
-    meter_uuid = '4d95d5ce-de62-3449-bd58-4dcad75b526d'
+    meter_uuid = '68e04192-e924-36b8-9c5e-f072bd93ed07'
     print("Data from GreenButton meter uuid '{0}'".format(meter_uuid))
 
     df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
@@ -88,7 +113,6 @@ if __name__ == '__main__':
     df.index = df.index.map(pd.to_datetime)
 
     df["date"] = df.index.date
-    df["time"] = df.index.hour
 
     data_meter = df[meter_uuid]
     data_meter = utc_to_local(data_meter, local_zone="America/Los_Angeles")
@@ -107,8 +131,8 @@ if __name__ == '__main__':
 
     print("--- Bill calculation ...")
     bill_calc = CostCalculator()
-
-    # Load the tariff information and fill the object
+    #
+    # # Load the tariff information and fill the object
 
     tariff_struct_from_openei_data(tariff_openei_data, bill_calc)  # This analyses the raw data from the openEI request and populate the "CostCalculator" object
 
@@ -119,7 +143,7 @@ if __name__ == '__main__':
                                                                                         tariff_openei_data.distrib_level_of_interest,
                                                                                         tariff_openei_data.phase_wing))
 
-    print(" - Found {0} tariff blocks from OpenEI".format(len(bill_calc.get_tariff_struct(label_tariff=str(TariffType.ENERGY_CUSTOM_CHARGE.value[0])))))
+    print(" - Found {0} tariff blocks from OpenEI".format(len(bill_calc.get_tariff_struct(label_tariff=str(TariffType.ENERGY_CUSTOM_CHARGE.value)))))
     print(" - Valid if peak demand is between {0} kW and {1} kW".format(bill_calc.tariff_min_kw, bill_calc.tariff_max_kw))
     print(" - Valid if energy demand is between {0} kWh and {1} kWh".format(bill_calc.tariff_min_kwh, bill_calc.tariff_max_kwh))
     print(" ----------------------")
@@ -128,8 +152,8 @@ if __name__ == '__main__':
     #start_date_bill = datetime(2017, 7, 23, hour=0, minute=0, second=0)
     #end_date_bill = datetime(2017, 8, 21, hour=23, minute=59, second=59)
 
-    start_date_bill = datetime(2017, 7, 1, hour=0, minute=0, second=0)
-    end_date_bill = datetime(2017, 7, 31, hour=23, minute=59, second=59)
+    start_date_bill = datetime(2017, 7, 20, hour=0, minute=0, second=0)
+    end_date_bill = datetime(2017, 8, 20, hour=23, minute=59, second=59)
 
     mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
     data_meter = data_meter.loc[mask]
@@ -146,7 +170,7 @@ if __name__ == '__main__':
     timestep = TariffElemPeriod.QUARTERLY  # We want a 1h period
 
     price_elec, map = bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
-    print list(price_elec.loc[:, 'customer_energy_charge'])
+    #print list(price_elec.loc[:, 'customer_energy_charge'])
 
     price_elec.plot()
     plt.grid()
