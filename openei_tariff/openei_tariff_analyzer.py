@@ -211,6 +211,13 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
     for block_rate in openei_tarif_obj.data_openei:
 
         # Tariff starting and ending dates
+        if type(block_rate['startdate']) is not datetime:
+            block_rate['startdate'] = datetime.strptime(block_rate['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(
+                tzinfo=pytz.timezone('UTC'))
+        if type(block_rate['enddate']) is not datetime:
+            block_rate['enddate'] = datetime.strptime(block_rate['enddate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(
+                tzinfo=pytz.timezone('UTC'))
+
         tariff_dates = (block_rate['startdate'], block_rate['enddate'])
 
         # --- Fix charges
