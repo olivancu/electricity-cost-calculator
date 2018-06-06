@@ -196,8 +196,6 @@ class FixedTariff(TariffBase):
     def get_price_from_timestamp(self, timestamp):
         return self.__rate_value
 
-# TODO: float demand class
-
 # --------------- TOU TARIFFs --------------- #
 
 
@@ -237,9 +235,9 @@ class TimeOfUseTariff(TariffBase):
         return self.__unit_metric
 
     def period_metric(self):
-        # TODO: replace ifs by map
         nb_periods_in_day = self.__schedule.periods_in_day
 
+        # TODO: replace ifs by map
         if nb_periods_in_day == 24:
             return TariffElemPeriod.HOURLY
         elif nb_periods_in_day == 24 * 2:
@@ -250,7 +248,6 @@ class TimeOfUseTariff(TariffBase):
             return TariffElemPeriod.DAILY
 
     def get_price_from_timestamp(self, timestamp):
-        # TODO: scale with the unit
         return self.__schedule.get_from_timestamp(timestamp)
 
     @staticmethod
@@ -392,7 +389,7 @@ class TouEnergyChargeTariff(TimeOfUseTariff):
         energy = 0.0
         cost = 0.0
 
-        # TODO: check for blockrate !
+        # TODO: check for blockrate instead of assuming it's a float !
 
         for idx, df_day in df.groupby(df.index.date):
 

@@ -169,11 +169,9 @@ class CostCalculator(object):
 
     def get_price_in_range(self, label_tariff, date_range, timestep):
         """
-        TODO
+        Generate a dataframe of the price of
         remark: doesn't work with timestep > 1h ..
         """
-
-        # TODO: this is not optimal but code-wise it's easier to write.. and there must be a way to do it with a MAP
 
         # Prepare the Pandas dataframe
         (start_date_price, end_date_price) = date_range
@@ -259,7 +257,7 @@ class CostCalculator(object):
             # Per label
             print("\n| Total bill per type or tariff:")
             for l_key, v in acc_per_label.items():
-                # TODO: print nicely the details
+                # TODO: print nicely the details ...
                 print(" - Type '{0}': {1} ($)".format(str(l_key), v))
 
         return acc_tot, acc_per_chargetype, acc_per_label

@@ -73,7 +73,7 @@ class OpenEI_tariff(object):
                     if not(self.phase_wing in data_block['phasewiring']):
                         continue
                 else:  # check the title if this field is missing
-                    if self.phase_wing not in data_block['name']:  # TODO: be sure that Single / Poly is always written in the name
+                    if self.phase_wing not in data_block['name']:
                         continue
 
             # Check the grid level option
@@ -429,7 +429,6 @@ def get_pdp_energycharge(openei_tarif_obj, date_start_event):
 
         energy_charge = block['pdp_charge_energy']
 
-        # TODO: encode it as a RTP structure
         rate_struct = {}
         rate_struct['allmonth'] = {TouRateSchedule.MONTHLIST_KEY: range(1,13),
                                                   TouRateSchedule.DAILY_RATE_KEY: {
