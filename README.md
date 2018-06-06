@@ -148,7 +148,7 @@ Optional arguments can be specified:
 
 ## Get the prices signal over a period
 
-The following method returns a pandas dataframe mapping the dates in 'date_range' to the price of electricity, sampled at a period 'timestep'. The dataframe columns points to each type of tariff
+The following method generates a pandas dataframe mapping the dates in 'date_range' to the price of electricity, sampled at a period 'timestep'. The dataframe columns points to each type of tariff
 
 ```python
   date_range = (startdate, endate)
@@ -161,3 +161,17 @@ The following method returns a pandas dataframe mapping the dates in 'date_range
 `python openei_test.py`
 
 This outputs the bill linked to an energy meter of a building, given a specific tariff. 
+
+# Tool limitations and future features
+
+## Hypothesis and CostCalculator limitations
+
+ - The code has only been tested for Commercial building. The tiers in energy tariff that can be encountered at the residential level are not supported.
+ - The price of electricity read from OpenEI is an hourly signal. However, some utilities such as PG&E define periods in the day with a 30-min resolution.
+ - The tool doesn't take into account the reactive power cost (power factor adaptation or price per kVARh)
+ - The credits for the non-PDP event are applied even on the PDP event days. As the effect is neglectable for the price of energy, it might impact the demand cost. However, the user can read the demand credit days in the bill details and decide to apply it or not.
+
+## Future features
+
+ - Tier structure for energy price
+ - Real-Time Pricing support
