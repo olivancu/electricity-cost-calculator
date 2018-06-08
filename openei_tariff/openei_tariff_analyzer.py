@@ -78,7 +78,7 @@ class OpenEI_tariff(object):
                     if not(self.phase_wing in data_block['phasewiring']):
                         continue
                 else:  # check the title if this field is missing
-                    if self.phase_wing not in data_block['name']:  # TODO: be sure that Single / Poly is always written in the name
+                    if self.phase_wing not in data_block['name']:
                         continue
 
             # Check the grid level option
@@ -224,6 +224,13 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
     for block_rate in openei_tarif_obj.data_openei:
 
         # Tariff starting and ending dates
+        if type(block_rate['startdate']) is not datetime:
+            block_rate['startdate'] = datetime.strptime(block_rate['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(
+                tzinfo=pytz.timezone('UTC'))
+        if type(block_rate['enddate']) is not datetime:
+            block_rate['enddate'] = datetime.strptime(block_rate['enddate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(
+                tzinfo=pytz.timezone('UTC'))
+
         tariff_dates = (block_rate['startdate'], block_rate['enddate'])
 
         # --- Fix charges
@@ -234,40 +241,40 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
         if '/day' in block_rate['fixedchargeunits']:
             period_fix_charge = TariffElemPeriod.DAILY
 
-        bill_calculator.add_tariff(FixedTariff(tariff_dates, tariff_fix, period_fix_charge), str(TariffType.FIX_CUSTOM_CHARGE.value[0]))
+        bill_calculator.add_tariff(FixedTariff(tariff_dates, tariff_fix, period_fix_charge), str(TariffType.FIX_CUSTOM_CHARGE.value))
 
         # --- Demand charges: flat
         tariff_flatdemand_obj = get_flatdemand_obj_from_openei(block_rate)
 
         if tariff_flatdemand_obj is not None:
             bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_flatdemand_obj),
-                                       str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value[0]))
+                                       str(TariffType.DEMAND_CUSTOM_CHARGE_SEASON.value))
 
         # --- Energy charges
         tariff_energy_obj = get_energyrate_obj_from_openei(block_rate)
 
         if tariff_energy_obj is not None:
-            bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_energy_obj), str(TariffType.ENERGY_CUSTOM_CHARGE.value[0]))
+            bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_energy_obj), str(TariffType.ENERGY_CUSTOM_CHARGE.value))
 
         # --- Demand charges: tou
         tariff_toudemand_obj = get_demandrate_obj_from_openei(block_rate)
 
         if tariff_toudemand_obj is not None:
-            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_toudemand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value[0]))
+            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_toudemand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value))
 
         # --- PDP credits for energy - todo: remove the pdp days
         tariff_pdp_credit_energy_obj = get_pdp_credit_energyrate_obj_from_openei(block_rate)
 
         if tariff_pdp_credit_energy_obj is not None:
             bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_pdp_credit_energy_obj),
-                                       str(TariffType.PDP_ENERGY_CREDIT.value[0]))
+                                       str(TariffType.PDP_ENERGY_CREDIT.value))
 
         # --- PDP credits for energy - todo: remove the pdp days
         tariff_pdp_credit_demand_obj = get_pdp_credit_demandrate_obj_from_openei(block_rate)
 
         if tariff_pdp_credit_demand_obj is not None:
             bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_pdp_credit_demand_obj),
-                                       str(TariffType.PDP_DEMAND_CREDIT.value[0]))
+                                       str(TariffType.PDP_DEMAND_CREDIT.value))
                 # --- PDP credits for demand
 
     # Other useful information, beside the tariff
@@ -297,7 +304,7 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
         tariff_pdp_obj = get_pdp_energycharge(openei_tarif_obj, pdp_dates[0])
         if tariff_pdp_obj is not None:
             bill_calculator.add_tariff(TouEnergyChargeTariff(pdp_dates, tariff_pdp_obj),
-                                       str(TariffType.PDP_ENERGY_CHARGE.value[0]))
+                                       str(TariffType.PDP_ENERGY_CHARGE.value))
 
 def populate_pdp_events_from_json(openei_tarif_obj, pdp_event_filenames='PDP_events.json'):
     empty = []
@@ -452,7 +459,6 @@ def get_pdp_energycharge(openei_tarif_obj, date_start_event):
 
         energy_charge = block['pdp_charge_energy']
 
-        # TODO: encode it as a RTP structure
         rate_struct = {}
         rate_struct['allmonth'] = {TouRateSchedule.MONTHLIST_KEY: range(1,13),
                                                   TouRateSchedule.DAILY_RATE_KEY: {

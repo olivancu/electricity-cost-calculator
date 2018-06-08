@@ -14,37 +14,6 @@ class ChargeType(Enum):
     ENERGY = 'energy',
 
 
-class BlockRate:
-    """
-
-    """
-
-    def __init__(self, cost_base, block_rate=None):
-
-        self.__rates = [cost_base]
-        self.__thresholds = [0]
-
-        if block_rate is not None:
-
-            (costs, thres) = block_rate
-            self.__rates += costs
-            self.__thresholds += thres
-
-        self.__thresholds.append(float('inf'))
-
-    def get_rate(self, acc=None):
-        """
-
-        :param acc:
-        :return:
-        """
-
-        if acc is None:
-            return self.__rates[0]
-        else:
-            return [self.__rates[i] for i in range(len(self.__rates)) if self.__thresholds[i] <= acc < self.__thresholds[i+1]][0]
-
-
 class TouRateSchedule:
     """
     This structure stores the Time-Of-Use rates related to power or energy.
@@ -136,6 +105,12 @@ class TouRateSchedule:
     # --- private
     @staticmethod
     def get_day_in_the_week(date_sel):
+        """
+        TODO write description
+
+        :param date_sel:
+        :return:
+        """
 
         if date_sel in holidays.US(state='CA', years=date_sel.year):
             return 0  # Hardcoded: holidays are like Sundays ...
@@ -160,14 +135,13 @@ class TouRateSchedule:
 
     def get_rate(self, m_date, d_date):
         """
+        TODO write description
 
         :param self:
         :param m_date:
         :param d_date:
         :return:
         """
-
-        # TODO use map ?
 
         for m_lab, m_data in self.__rates.items():
             if m_date in m_data[self.MONTHLIST_KEY]:
@@ -178,7 +152,7 @@ class TouRateSchedule:
     @property
     def periods_in_day(self):
         """
-        TODO
+        TODO write description
         :return:
         """
 
@@ -190,4 +164,39 @@ class TouRateSchedule:
 
     @property
     def main_structure(self):
+        """
+        The raw tariff rates
+        """
         return self.__rates
+
+
+class BlockRate:
+    """
+    This class stores and manipulates the rate of energy that vary as a function of the total consumption energy
+    """
+
+    def __init__(self, cost_base, block_rate=None):
+
+        self.__rates = [cost_base]
+        self.__thresholds = [0]
+
+        if block_rate is not None:
+
+            (costs, thres) = block_rate
+            self.__rates += costs
+            self.__thresholds += thres
+
+        self.__thresholds.append(float('inf'))
+
+    def get_rate(self, acc=None):
+        """
+
+        :param acc:
+        :return:
+        """
+
+        if acc is None:
+            return self.__rates[0]
+        else:
+            return [self.__rates[i] for i in range(len(self.__rates)) if self.__thresholds[i] <= acc < self.__thresholds[i+1]][0]
+
