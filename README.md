@@ -1,3 +1,8 @@
+# Configuring
+
+Set PYTHONPATH to the root directory before running:
+$> export PYTHONPATH=$PYTHONPATH:/path/to/electricity-cost-calculator
+
 # From OpenEI tariff to the Bill Calculator
 
 ## Run the test file
