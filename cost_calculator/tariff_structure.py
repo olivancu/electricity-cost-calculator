@@ -196,10 +196,6 @@ class FixedTariff(TariffBase):
     def get_price_from_timestamp(self, timestamp):
         return self.__rate_value
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Infer from energy (kWh) the Power (kW) for demand charges
 # --------------- TOU TARIFFs --------------- #
 
 
