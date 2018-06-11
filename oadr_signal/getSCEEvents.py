@@ -8,7 +8,10 @@ returns a dictionary: {'eventName': startTimeInEpoch, 'eventName': startTimeInEp
 '''
 
 
-def pollSCEEvents(url, events):
+def pollSCEEvents(sceConfig):
+    url = sceConfig['url']
+    events = sceConfig['eventsToListenFor']
+
     # events = [unicode(event) for event in events]
     contents = urllib2.urlopen(url).read()
     activeScheduledEvents = json.loads(contents)

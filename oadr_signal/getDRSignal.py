@@ -1,28 +1,24 @@
-import datetime as dtime
-import random
-import string
 from DR_template import getSignalString
-import pandas
 import os.path
-
 from oadr_signal.getSCEEvents import *
+from oadr_signal.getPelicanDREvents import *
 from tariff_maps import tariff_maps
 from cost_calculator.cost_calculator import *
 from openei_tariff.openei_tariff_analyzer import *
-from env import *
+from utils import *
+from xbos import get_client
 
-def pollEvents(sceUrl, sceEvents, pgeURIs):
-    eventStartTimes = pollSCEEvents(url=sceUrl, events=sceEvents)
+def pollEvents(pollSceApi, sceConfig, pollPelicans, pelicanConfig, mdalClient=None):
+    eventStartTimes = {}
 
-    #TODO: get event start times from PG&E events too
+    if pollSceApi:
+        sceStartTimes = pollSCEEvents(sceConfig = sceConfig)
+        eventStartTimes.update(sceStartTimes)
+    if pollPelicans:
+        pelicanStartTimes = pollPelicanEvents(pelicanConfig=pelicanConfig, client=mdalClient)
+        eventStartTimes.update(pelicanStartTimes)
 
     return eventStartTimes
-
-def generateAlphanumericId(length=20, createdRandomIds=[]):
-    rndm = ''.join(random.choice(string.ascii_lowercase[:6] + string.digits) for _ in range(length))
-    if rndm in createdRandomIds:
-        return generateAlphanumericId()
-    return rndm
 
 def getHourlyEventDayPrices(startDateTime, tariff_name='PGEA10', verbose=False):
     eventStartDate = startDateTime.date()
@@ -64,17 +60,6 @@ def getHourlyEventDayPrices(startDateTime, tariff_name='PGEA10', verbose=False):
     return {'energyPrices': energyPrices, 'demandPrices': demandPrices}
 
 
-def convertFromDatetimeToString(dt):
-    return dt.strftime('%Y-%m-%dT%H:%M:%S.00Z')
-
-
-def getEventHours(startTime, num=24):
-    return [convertFromDatetimeToString(startTime + dtime.timedelta(hours=i)) for i in range(num)]
-
-
-def convertEpochToUTC(epoch):
-    return dtime.datetime.utcfromtimestamp(epoch).replace(tzinfo=pytz.utc)
-
 def createPriceSignal(eventHours, prices, signalId, itemUnits='USD', scaleCode='none',
                       isEnergySignal=True, signalName='ENERGY_PRICE', currentPrice=0):
     signal = {}
@@ -93,8 +78,8 @@ def createPriceSignal(eventHours, prices, signalId, itemUnits='USD', scaleCode='
     return signal
 
 
-def generateDRSignal(event, startTime, prices, requestId, eventId, modificationNumber, eventStatus, drEventFilename,
-                     signals, group=True, vtnId='SCE-python-VTN-LBL', vtnComment='Module', duration='PT1440M',
+def generateDRSignal(startTime, requestId, eventId, modificationNumber, eventStatus, drEventFilename,
+                     signals, group=True, vtnId='LBL-python-VTN', vtnComment='Module', duration='PT1440M',
                      groupId='PGEA10', resourceId='csu-dominguez'):
     createdDateTime = convertFromDatetimeToString(dtime.datetime.utcnow())
     xml = getSignalString(requestId=requestId,
@@ -118,72 +103,66 @@ def generateDRSignal(event, startTime, prices, requestId, eventId, modificationN
         f.write(xml)
     return drEventFilename, eventId, modificationNumber, startTime
 
-
-def sendSignalToServer(filename):
-    # do something
-    return
-
-
-def checkIfEventExists(events, startDate, eventName, tariff, status=None):
-    # handle different eventStatuses <----------------- do this
-    if events.loc[(events.eventName == eventName) & (events.eventStartDate == startDate) & (events.tariff == tariff)].eventStartDate.count() > 0:
-        e = events.loc[(events.eventName == eventName) & (events.eventStartDate == startDate) & (events.tariff == tariff)].tail(1)
-        prevModNumber = e.modNumber.values[0]
-        prevEventId = e.eventId.values[0]
-        return {'prevEventExists': True, 'prevEventId': prevEventId, 'prevModNumber': prevModNumber}
+def getMdalClient(pelicanConfig):
+    client = None
+    if "xbosEntityPath" in pelicanConfig.keys():
+        entityPath = pelicanConfig["xbosEntityPath"]
+        c = get_client(entity=entityPath)
+        client = mdal.MDALClient("xbos/mdal", client=c)
     else:
-        return {'prevEventExists': False}
-
-
-def getEventsHistory(eventsFilename='events.csv'):
-    path = OADR_PATH + eventsFilename
-    if os.path.exists(path) == False:
-        with open(eventsFilename, 'w') as f:
-            f.write('idx,eventId,eventName,modNumber,eventStartDate,eventStatus,drSignalFilename,tariff\n')
-    events = pandas.read_csv(eventsFilename, index_col=0)
-    return events
-
-
-def appendToHistory(idx, eventId, eventName, modNumber, startDate, status, drSignalFilename, tariff, eventsFilename='events.csv'):
-    with open(eventsFilename, 'a') as f:
-        f.write('%d,%s,%s,%d,%s,%s,%s,%s\n' % (idx, eventId, eventName, modNumber, startDate, status, drSignalFilename, tariff))
-
-
-def arePricesDifferent(prices1, prices2):
-    keys1 = prices1.keys()
-    keys2 = prices2.keys()
-
-    if len(keys1) != len(keys2):
-        return True
-
-    energyPrices1 = prices1['energyPrices']
-    energyPrices2 = prices2['energyPrices']
-
-    demandPrices1 = prices1['demandPrices']
-    demandPrices2 = prices2['demandPrices']
-    # print("LOG----- prices different: ",~(((energyPrices1 == energyPrices2).all()) & ((demandPrices1 == demandPrices2).all())))
-    return not (((energyPrices1 == energyPrices2).all()) & ((demandPrices1 == demandPrices2).all()))
+        c = get_client()
+        client = mdal.MDALClient("xbos/mdal", client=c)
+    return client
 
 
 if __name__ == '__main__':
-    with open('settings.json') as configFile:
+    with open(OADR_PATH+'settings.json') as configFile:
         config = json.load(configFile)
 
-    sce_config = config['sce']
-    url = sce_config['url']
-    eventsToListenFor = sce_config['eventsToListenFor']
-    storeEventsFilename = sce_config['eventsHistoryFilename']
-    tariffs = sce_config['tariffs']
+    params = config['params']
+    includeDemandPricesFlag = params['includeCurrencyPerKWFlag']
+    pollPelicansFlag = params['pollPelicansFlag']
+    pollSCEApiFlag = params['pollSCEApiFlag']
+    sendToRecipientFlag = params['sendToRecipientFlag']
+    recipientURL = params['signal_recipient_url']
+    storeEventsFilename = params['eventsHistoryFilename']
+    sceTariffs = params['sceTariffs']
+    pgeTariffs = params['pgeTariffs']
+
+    sceConfig = None
+    if pollSCEApiFlag:
+        if 'sce' in config.keys():
+            sceConfig = config['sce']
+
+        else:
+            print("cannot find sce configuration in settings.json")
+            exit(1)
+
+    pelicanConfig = None
+    if pollPelicansFlag:
+        if 'pelican' in config.keys():
+            pelicanConfig = config['pelican']
+            mdalClient = getMdalClient(pelicanConfig=pelicanConfig)
+        else:
+            print("cannot find pelican configuration in settings.json")
+            exit(1)
 
     events = getEventsHistory(eventsFilename=storeEventsFilename)
     # print("LOG--------- main")
     while True:
-        eventStartTimes = pollEvents(sceUrl=url, sceEvents=eventsToListenFor, pgeURIs=None)
+        eventStartTimes = pollEvents(pollSceApi=pollSCEApiFlag, sceConfig=sceConfig,
+                                     pollPelicans=pollPelicansFlag, pelicanConfig=pelicanConfig, mdalClient=mdalClient)
 
         if eventStartTimes != {}:
             # print("LOG--------- not null events ")
             for eventName in eventStartTimes.keys():
                 if eventName.endswith('_SCHEDULED'):
+
+                    if eventName.startswith('PGE_EVENT'):
+                        tariffs = pgeTariffs
+                    else:
+                        tariffs = sceTariffs
+
                     st_epoch = eventStartTimes[eventName]
                     st = convertEpochToUTC(st_epoch / 1000.0)
                     startTime = convertFromDatetimeToString(st)
@@ -192,6 +171,10 @@ if __name__ == '__main__':
 
                     for tariff in tariffs:
                         prices = getHourlyEventDayPrices(startDateTime=st, tariff_name=tariff)
+
+                        if not includeDemandPricesFlag:
+                            prices = {'energyPrices': prices['energyPrices']}
+
                         signals = []
                         for priceSignal in prices.keys():
                             # print("LOG--------- price key: ",priceSignal, eventName)
@@ -215,8 +198,11 @@ if __name__ == '__main__':
                         eventExists = checkIfEventExists(events=events, eventName=eventName, startDate=st_epoch, tariff = tariff,
                                                          status=eventStatus)
                         if eventExists['prevEventExists']:
-                            # print("LOG------ prev event exists", eventName)
-                            prevPrices = getHourlyEventDayPrices(startDateTime=st, tariff_name=tariff)  # change this <---------- include prices in the file
+                            # TODO: include prices in log file
+                            prevPrices = getHourlyEventDayPrices(startDateTime=st, tariff_name=tariff)
+                            if not includeDemandPricesFlag:
+                                prevPrices = {'energyPrices': prevPrices['energyPrices']}
+
                             if arePricesDifferent(prices1=prices, prices2=prevPrices):
                                 # print("LOG------ diff prices", eventName)
                                 modificationNumber = eventExists['prevModNumber'] + 1
@@ -229,9 +215,7 @@ if __name__ == '__main__':
                         drSignalFilename = '%s_%s_%s_%d.xml' % (eventName, tariff, eventId, modificationNumber)
 
                         filename, eventId, modificationNumber, startTime = generateDRSignal(
-                            event=eventName,
                             startTime=startTime,
-                            prices=prices,
                             requestId=requestId,
                             eventId=eventId,
                             modificationNumber=modificationNumber,
@@ -259,7 +243,8 @@ if __name__ == '__main__':
                                         tariff=tariff)
                         events = pandas.read_csv(OADR_PATH+storeEventsFilename, index_col=0)
                         print("Event created: %s"%drSignalFilename)
-                        sendSignalToServer(filename=drSignalFilename)
+                        if sendToRecipientFlag:
+                            sendSignalToServer(url=recipientURL, filename=drSignalFilename)
 
             # elif eventName.endswith('_ACTIVE'):
             # handle active events
