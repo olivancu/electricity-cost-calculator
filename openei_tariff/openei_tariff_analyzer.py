@@ -12,7 +12,7 @@ import pytz
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
 THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
-PDP_PATH = 'openei_tariff/'  # './'
+PDP_PATH = './'  # './'
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
 
 class OpenEI_tariff(object):

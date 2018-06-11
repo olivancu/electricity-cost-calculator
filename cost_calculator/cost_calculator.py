@@ -106,7 +106,7 @@ class CostCalculator(object):
         # Initialize the returned structure
 
         t_s = df.index[0]
-        t_i = datetime(t_s.year, t_s.month, 1)
+        t_i = datetime(year=t_s.year, month=t_s.month, day=1, tzinfo=t_s.tzinfo)
         while t_i <= df.index[-1]:
             ret[t_i.strftime("%Y-%m")] = {}
             for k in self.__tariffstructures.keys():

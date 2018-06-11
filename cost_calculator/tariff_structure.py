@@ -196,6 +196,10 @@ class FixedTariff(TariffBase):
     def get_price_from_timestamp(self, timestamp):
         return self.__rate_value
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> Infer from energy (kWh) the Power (kW) for demand charges
 # --------------- TOU TARIFFs --------------- #
 
 
@@ -292,13 +296,20 @@ class TouDemandChargeTariff(TimeOfUseTariff):
         metric_unit_mult = float(self.unit_metric.value)
         metric_price_mult = float(self.unit_cost.value)
 
-        # TODO check the period of the data ! It has been assumed that mean(P_per) = E_per
-        # The logic is to get the TOU demand price and split it in different periods, according to the mask
+        # df is in kWh and demand in kW: convert to Power
+        # todo: use map or smth more elegant
+        power_coeff = 1
+        if df.index.freq is not None:
+            if df.index.freq == '15T':
+                power_coeff = 4
+            elif df.index.freq == '30T':
+                power_coeff = 2
+            elif df.index.freq == '60T' or df.index.freq == 'H':
+                power_coeff = 1
 
         max_per_set = {}
 
         for idx, df_day in df.groupby(df.index.date):
-
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
 
             set_of_daily_prices = set(daily_rate)
@@ -309,15 +320,14 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # Create the mask in the day for this price
                 mask_price = df_prices['price'] == day_p
                 mask_price = mask_price.tolist()
-                mask_price_index = df_prices.loc[mask_price, 'date']
 
                 date_max_period = None
                 if data_col is not None:
-                    df_masked = df_day.loc[mask_price_index, data_col]
+                    df_masked = df_day.loc[mask_price, data_col]
                     if len(df_masked) > 0:
                         date_max_period = df_masked.idxmax()
                 else:
-                    df_masked = df_day.loc[mask_price_index]
+                    df_masked = df_day.loc[mask_price]
                     if len(df_masked) > 0:
                         date_max_period = df_masked.idxmax()
 
@@ -347,12 +357,13 @@ class TouDemandChargeTariff(TimeOfUseTariff):
 
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
-                    max_power_scaled = max_power_period
+
+                    max_power_scaled = power_coeff * max_power_period
+
                     if type(date_max_period) is not pd.Timestamp:
                         max_power_date = date_max_period[data_col].to_pydatetime()
                     else:
                         max_power_date = date_max_period.to_pydatetime()
-
 
                     # The mask must be 24 hour long:
                     # it might not be the case for the first and last day, and the DST
