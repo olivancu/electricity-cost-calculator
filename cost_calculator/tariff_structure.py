@@ -181,10 +181,12 @@ class FixedTariff(TariffBase):
         last_day = df.index[-1].day
 
         nb_days = last_day - first_day + 1
+        nb_days_per_month = 365/12
 
         bill = 0
+
         if self.__rate_period == TariffElemPeriod.MONTHLY:
-            bill = self.__rate_value * nb_days/last_day  # a fraction of the month
+            bill = self.__rate_value * nb_days/nb_days_per_month  # a fraction of the month
         elif self.__rate_period == TariffElemPeriod.DAILY:
             bill = self.__rate_value * nb_days  # sum of each day
 
@@ -294,14 +296,19 @@ class TouDemandChargeTariff(TimeOfUseTariff):
 
         # df is in kWh and demand in kW: convert to Power
         # todo: use map or smth more elegant
+        freq = 1
+        if df.index.freq is None:
+            freq = pd.infer_freq(df.index)
+        else:
+            freq = df.index.freq
+
         power_coeff = 1
-        if df.index.freq is not None:
-            if df.index.freq == '15T':
-                power_coeff = 4
-            elif df.index.freq == '30T':
-                power_coeff = 2
-            elif df.index.freq == '60T' or df.index.freq == 'H':
-                power_coeff = 1
+        if freq == '15T':
+            power_coeff = 4
+        elif freq == '30T':
+            power_coeff = 2
+        elif freq == '60T' or df.index.freq == 'H':
+            power_coeff = 1
 
         max_per_set = {}
 
