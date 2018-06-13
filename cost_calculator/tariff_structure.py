@@ -294,22 +294,6 @@ class TouDemandChargeTariff(TimeOfUseTariff):
         metric_unit_mult = float(self.unit_metric.value)
         metric_price_mult = float(self.unit_cost.value)
 
-        # df is in kWh and demand in kW: convert to Power
-        # todo: use map or smth more elegant
-        freq = 1
-        if df.index.freq is None:
-            freq = pd.infer_freq(df.index)
-        else:
-            freq = df.index.freq
-
-        power_coeff = 1
-        if freq == '15T':
-            power_coeff = 4
-        elif freq == '30T':
-            power_coeff = 2
-        elif freq == '60T' or df.index.freq == 'H':
-            power_coeff = 1
-
         max_per_set = {}
 
         for idx, df_day in df.groupby(df.index.date):
@@ -317,6 +301,22 @@ class TouDemandChargeTariff(TimeOfUseTariff):
 
             set_of_daily_prices = set(daily_rate)
             df_prices = self.get_daily_price_dataframe(daily_rate, df_day)
+
+            # df is in kWh and demand in kW: convert to Power
+            # todo: use map or smth more elegant
+            freq = 1
+            if df_day.index.freq is None:
+                freq = pd.infer_freq(df_day.index)
+            else:
+                freq = df_day.index.freq
+
+            power_coeff = 1
+            if freq == '15T':
+                power_coeff = 4
+            elif freq == '30T':
+                power_coeff = 2
+            elif freq == '60T' or freq == 'H':
+                power_coeff = 1
 
             for day_p in set_of_daily_prices:
 
@@ -342,6 +342,8 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 else:
                     max_power_period = df_day[date_max_period] / metric_unit_mult
 
+                max_power_period *= power_coeff  # from kWh to kW
+
                 # Search for the same mask and update the value if a new mask
                 mask_price24h = mask_price
                 if len(mask_price) != len(daily_rate):  # if this price is already in the list, take the corresponding mask ...
@@ -361,8 +363,6 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
 
-                    max_power_scaled = power_coeff * max_power_period
-
                     if type(date_max_period) is not pd.Timestamp:
                         max_power_date = date_max_period[data_col].to_pydatetime()
                     else:
@@ -372,7 +372,7 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                     # it might not be the case for the first and last day, and the DST
                     price_key = metric_price_mult * day_p
 
-                    max_per_set[price_key] = {'mask': mask_price24h, 'max-demand': max_power_scaled, 'max-demand-date': max_power_date}
+                    max_per_set[price_key] = {'mask': mask_price24h, 'max-demand': max_power_period, 'max-demand-date': max_power_date}
 
         return max_per_set
 
