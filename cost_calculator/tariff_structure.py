@@ -296,26 +296,21 @@ class TouDemandChargeTariff(TimeOfUseTariff):
 
         max_per_set = {}
 
+        # df is in kWh and demand in kW: convert to Power
+        timestep_data = self.get_pd_timestep_data(df)
+
         for idx, df_day in df.groupby(df.index.date):
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
 
             set_of_daily_prices = set(daily_rate)
             df_prices = self.get_daily_price_dataframe(daily_rate, df_day)
 
-            # df is in kWh and demand in kW: convert to Power
-            # todo: use map or smth more elegant
-            freq = 1
-            if df_day.index.freq is None:
-                freq = pd.infer_freq(df_day.index)
-            else:
-                freq = df_day.index.freq
-
             power_coeff = 1
-            if freq == '15T':
+            if timestep_data == '15T':
                 power_coeff = 4
-            elif freq == '30T':
+            elif timestep_data == '30T':
                 power_coeff = 2
-            elif freq == '60T' or freq == 'H':
+            elif timestep_data == '60T' or timestep_data == 'H':
                 power_coeff = 1
 
             for day_p in set_of_daily_prices:
@@ -375,6 +370,27 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                     max_per_set[price_key] = {'mask': mask_price24h, 'max-demand': max_power_period, 'max-demand-date': max_power_date}
 
         return max_per_set
+
+    def get_pd_timestep_data(self, df):
+        """
+        Return the most likely data frequency
+        :return:
+        """
+
+        freq = 1
+
+        # Dataframe is complete
+        if df.index.freq is not None:
+            return df.index.freq
+
+        # Days are missing: loop through the day until getting a frequency
+        for idx, df_day in df.groupby(df.index.date):
+            if df_day.index.freq is not None:
+                return df_day.index.freq
+            elif len(df_day.index) > 2:  # need at least 3 dates
+                return pd.infer_freq(df_day.index)
+
+        return 1
 
 
 class TouEnergyChargeTariff(TimeOfUseTariff):
