@@ -223,14 +223,15 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
         tariff_dates = (block_rate['startdate'], block_rate['enddate'])
 
         # --- Fix charges
-        tariff_fix = block_rate['fixedchargefirstmeter']
+        if 'fixedchargefirstmeter' in block_rate.keys():
+            tariff_fix = block_rate['fixedchargefirstmeter']
 
-        period_fix_charge = TariffElemPeriod.MONTHLY
+            period_fix_charge = TariffElemPeriod.MONTHLY
 
-        if '/day' in block_rate['fixedchargeunits']:
-            period_fix_charge = TariffElemPeriod.DAILY
+            if '/day' in block_rate['fixedchargeunits']:
+                period_fix_charge = TariffElemPeriod.DAILY
 
-        bill_calculator.add_tariff(FixedTariff(tariff_dates, tariff_fix, period_fix_charge), str(TariffType.FIX_CUSTOM_CHARGE.value))
+            bill_calculator.add_tariff(FixedTariff(tariff_dates, tariff_fix, period_fix_charge), str(TariffType.FIX_CUSTOM_CHARGE.value))
 
         # --- Demand charges: flat
         tariff_flatdemand_obj = get_flatdemand_obj_from_openei(block_rate)
