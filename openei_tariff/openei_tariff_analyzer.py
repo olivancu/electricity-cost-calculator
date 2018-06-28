@@ -8,11 +8,11 @@ from datetime import datetime
 import requests
 import json
 import pytz
-
+import os
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 
-THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
-PDP_PATH = 'openei_tariff/'  # './'
+THIS_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
+PDP_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'  # './'
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
 
 
