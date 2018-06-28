@@ -1,7 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
-#bill_calculator_lib.
-from cost_calculator.tariff_structure import *
-from cost_calculator.rate_structure import *
+
+from ..cost_calculator.tariff_structure import *
+from ..cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
@@ -14,6 +14,7 @@ import pytz
 THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
 PDP_PATH = 'openei_tariff/'  # './'
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
+
 
 class OpenEI_tariff(object):
 
