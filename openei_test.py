@@ -1,8 +1,6 @@
 __author__ = 'Olivier Van Cutsem'
 
 from cost_calculator.cost_calculator import CostCalculator
-import json
-import pandas as pd
 from openei_tariff.openei_tariff_analyzer import *
 import matplotlib.pyplot as plt
 import pytz
