@@ -27,7 +27,7 @@ class OpenEI_tariff(object):
     LIMIT = '500'
     ORDER_BY_SORT = 'startdate'
 
-    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single', tou=False, option_mandatory=None, option_exclusion=None):
+    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single', tou=False, pdp=True, option_mandatory=None, option_exclusion=None):
 
         self.req_param = {}
 
@@ -51,6 +51,8 @@ class OpenEI_tariff(object):
         self.tou = tou
         self.option_exclusion = option_exclusion
         self.option_mandatory = option_mandatory
+
+        self.pdp_participate = pdp
 
         # The raw filtered answer from an API call
         self.data_openei = None
@@ -171,16 +173,16 @@ class OpenEI_tariff(object):
                 except ValueError:
                     print 'cant parse json'
                     return 1
-        except EnvironmentError:
+        except:
             print 'cant open file'
-            return 2  # everything went well
+            return 2
 
         # Encode the start/end dates as integers
         for block in self.data_openei:
             block['enddate'] = datetime.strptime(block['enddate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(tzinfo=pytz.timezone('UTC'))
             block['startdate'] = datetime.strptime(block['startdate'], '%Y-%m-%dT%H:%M:%S.000Z').replace(tzinfo=pytz.timezone('UTC'))
 
-        return 0
+        return 0 # everything went well
 
     def checkIfPDPDayPresent(self, utilityId, st, et):
         for event in self.pdp_events:
@@ -234,14 +236,15 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
         tariff_dates = (block_rate['startdate'], block_rate['enddate'])
 
         # --- Fix charges
-        tariff_fix = block_rate['fixedchargefirstmeter']
+        if 'fixedchargefirstmeter' in block_rate.keys():
+            tariff_fix = block_rate['fixedchargefirstmeter']
 
-        period_fix_charge = TariffElemPeriod.MONTHLY
+            period_fix_charge = TariffElemPeriod.MONTHLY
 
-        if '/day' in block_rate['fixedchargeunits']:
-            period_fix_charge = TariffElemPeriod.DAILY
+            if '/day' in block_rate['fixedchargeunits']:
+                period_fix_charge = TariffElemPeriod.DAILY
 
-        bill_calculator.add_tariff(FixedTariff(tariff_dates, tariff_fix, period_fix_charge), str(TariffType.FIX_CUSTOM_CHARGE.value))
+            bill_calculator.add_tariff(FixedTariff(tariff_dates, tariff_fix, period_fix_charge), str(TariffType.FIX_CUSTOM_CHARGE.value))
 
         # --- Demand charges: flat
         tariff_flatdemand_obj = get_flatdemand_obj_from_openei(block_rate)
@@ -262,19 +265,20 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
         if tariff_toudemand_obj is not None:
             bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_toudemand_obj), str(TariffType.DEMAND_CUSTOM_CHARGE_TOU.value))
 
-        # --- PDP credits for energy - todo: remove the pdp days
-        tariff_pdp_credit_energy_obj = get_pdp_credit_energyrate_obj_from_openei(block_rate)
+        if openei_tarif_obj.pdp_participate:
+            # --- PDP credits for energy - todo: remove the pdp days
+            tariff_pdp_credit_energy_obj = get_pdp_credit_energyrate_obj_from_openei(block_rate)
 
-        if tariff_pdp_credit_energy_obj is not None:
-            bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_pdp_credit_energy_obj),
-                                       str(TariffType.PDP_ENERGY_CREDIT.value))
+            if tariff_pdp_credit_energy_obj is not None:
+                bill_calculator.add_tariff(TouEnergyChargeTariff(tariff_dates, tariff_pdp_credit_energy_obj),
+                                           str(TariffType.PDP_ENERGY_CREDIT.value))
 
-        # --- PDP credits for energy - todo: remove the pdp days
-        tariff_pdp_credit_demand_obj = get_pdp_credit_demandrate_obj_from_openei(block_rate)
+            # --- PDP credits for demand
+            tariff_pdp_credit_demand_obj = get_pdp_credit_demandrate_obj_from_openei(block_rate)
 
-        if tariff_pdp_credit_demand_obj is not None:
-            bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_pdp_credit_demand_obj),
-                                       str(TariffType.PDP_DEMAND_CREDIT.value))
+            if tariff_pdp_credit_demand_obj is not None:
+                bill_calculator.add_tariff(TouDemandChargeTariff(tariff_dates, tariff_pdp_credit_demand_obj),
+                                           str(TariffType.PDP_DEMAND_CREDIT.value))
                 # --- PDP credits for demand
 
     # Other useful information, beside the tariff
@@ -291,20 +295,22 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
             bill_calculator.tariff_min_kwh = block_rate['peakkwhusagemin']
 
     # Analyse PdP events
-    pdp_data = []
-    try:
-        pdp_data = populate_pdp_events_from_json(openei_tarif_obj, pdp_event_filenames=pdp_event_filenames)
-    except EnvironmentError:
-        print "PdP events: can't open file"
 
-    pdp_data_filter = [event for event in pdp_data if event['utility_id'] == int(openei_tarif_obj.req_param['eia'])]
-    for pdp_event in pdp_data_filter:
-        pdp_dates = datetime.strptime(pdp_event['start_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC')), datetime.strptime(
-            pdp_event['end_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC'))
-        tariff_pdp_obj = get_pdp_energycharge(openei_tarif_obj, pdp_dates[0])
-        if tariff_pdp_obj is not None:
-            bill_calculator.add_tariff(TouEnergyChargeTariff(pdp_dates, tariff_pdp_obj),
-                                       str(TariffType.PDP_ENERGY_CHARGE.value))
+    if openei_tarif_obj.pdp_participate:
+        pdp_data = []
+        try:
+            pdp_data = populate_pdp_events_from_json(openei_tarif_obj, pdp_event_filenames=pdp_event_filenames)
+        except EnvironmentError:
+            print "PdP events: can't open file"
+
+        pdp_data_filter = [event for event in pdp_data if event['utility_id'] == int(openei_tarif_obj.req_param['eia'])]
+        for pdp_event in pdp_data_filter:
+            pdp_dates = datetime.strptime(pdp_event['start_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC')), datetime.strptime(
+                pdp_event['end_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('UTC'))
+            tariff_pdp_obj = get_pdp_energycharge(openei_tarif_obj, pdp_dates[0])
+            if tariff_pdp_obj is not None:
+                bill_calculator.add_tariff(TouEnergyChargeTariff(pdp_dates, tariff_pdp_obj),
+                                           str(TariffType.PDP_ENERGY_CHARGE.value))
 
 def populate_pdp_events_from_json(openei_tarif_obj, pdp_event_filenames='PDP_events.json'):
     empty = []

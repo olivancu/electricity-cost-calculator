@@ -181,10 +181,12 @@ class FixedTariff(TariffBase):
         last_day = df.index[-1].day
 
         nb_days = last_day - first_day + 1
+        nb_days_per_month = 365/12
 
         bill = 0
+
         if self.__rate_period == TariffElemPeriod.MONTHLY:
-            bill = self.__rate_value * nb_days/last_day  # a fraction of the month
+            bill = self.__rate_value * nb_days/nb_days_per_month  # a fraction of the month
         elif self.__rate_period == TariffElemPeriod.DAILY:
             bill = self.__rate_value * nb_days  # sum of each day
 
@@ -292,32 +294,38 @@ class TouDemandChargeTariff(TimeOfUseTariff):
         metric_unit_mult = float(self.unit_metric.value)
         metric_price_mult = float(self.unit_cost.value)
 
-        # TODO check the period of the data ! It has been assumed that mean(P_per) = E_per
-        # The logic is to get the TOU demand price and split it in different periods, according to the mask
-
         max_per_set = {}
 
-        for idx, df_day in df.groupby(df.index.date):
+        # df is in kWh and demand in kW: convert to Power
+        timestep_data = self.get_pd_timestep_data(df)
 
+        for idx, df_day in df.groupby(df.index.date):
             daily_rate = self.rate_schedule.get_daily_rate(df_day.index[0])
 
             set_of_daily_prices = set(daily_rate)
             df_prices = self.get_daily_price_dataframe(daily_rate, df_day)
+
+            power_coeff = 1
+            if timestep_data == '15T':
+                power_coeff = 4
+            elif timestep_data == '30T':
+                power_coeff = 2
+            elif timestep_data == '60T' or timestep_data == 'H':
+                power_coeff = 1
 
             for day_p in set_of_daily_prices:
 
                 # Create the mask in the day for this price
                 mask_price = df_prices['price'] == day_p
                 mask_price = mask_price.tolist()
-                mask_price_index = df_prices.loc[mask_price, 'date']
 
                 date_max_period = None
                 if data_col is not None:
-                    df_masked = df_day.loc[mask_price_index, data_col]
+                    df_masked = df_day.loc[mask_price, data_col]
                     if len(df_masked) > 0:
                         date_max_period = df_masked.idxmax()
                 else:
-                    df_masked = df_day.loc[mask_price_index]
+                    df_masked = df_day.loc[mask_price]
                     if len(df_masked) > 0:
                         date_max_period = df_masked.idxmax()
 
@@ -328,6 +336,8 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                     max_power_period = df_day.loc[date_max_period, data_col] / metric_unit_mult
                 else:
                     max_power_period = df_day[date_max_period] / metric_unit_mult
+
+                max_power_period *= power_coeff  # from kWh to kW
 
                 # Search for the same mask and update the value if a new mask
                 mask_price24h = mask_price
@@ -347,20 +357,40 @@ class TouDemandChargeTariff(TimeOfUseTariff):
 
                 # This is the first time this mask is seen OR this new demand is higher than the corresponding former: add it
                 if add_this_demand:
-                    max_power_scaled = max_power_period
+
                     if type(date_max_period) is not pd.Timestamp:
                         max_power_date = date_max_period[data_col].to_pydatetime()
                     else:
                         max_power_date = date_max_period.to_pydatetime()
 
-
                     # The mask must be 24 hour long:
                     # it might not be the case for the first and last day, and the DST
                     price_key = metric_price_mult * day_p
 
-                    max_per_set[price_key] = {'mask': mask_price24h, 'max-demand': max_power_scaled, 'max-demand-date': max_power_date}
+                    max_per_set[price_key] = {'mask': mask_price24h, 'max-demand': max_power_period, 'max-demand-date': max_power_date}
 
         return max_per_set
+
+    def get_pd_timestep_data(self, df):
+        """
+        Return the most likely data frequency
+        :return:
+        """
+
+        freq = 1
+
+        # Dataframe is complete
+        if df.index.freq is not None:
+            return df.index.freq
+
+        # Days are missing: loop through the day until getting a frequency
+        for idx, df_day in df.groupby(df.index.date):
+            if df_day.index.freq is not None:
+                return df_day.index.freq
+            elif len(df_day.index) > 2:  # need at least 3 dates
+                return pd.infer_freq(df_day.index)
+
+        return 1
 
 
 class TouEnergyChargeTariff(TimeOfUseTariff):
