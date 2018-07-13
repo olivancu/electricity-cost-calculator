@@ -148,106 +148,107 @@ if __name__ == '__main__':
 
     events = getEventsHistory(eventsFilename=storeEventsFilename)
     # print("LOG--------- main")
-    while True:
-        eventStartTimes = pollEvents(pollSceApi=pollSCEApiFlag, sceConfig=sceConfig,
-                                     pollPelicans=pollPelicansFlag, pelicanConfig=pelicanConfig, mdalClient=mdalClient)
+    # while True:
+    eventStartTimes = pollEvents(pollSceApi=pollSCEApiFlag, sceConfig=sceConfig,
+                                 pollPelicans=pollPelicansFlag, pelicanConfig=pelicanConfig, mdalClient=mdalClient)
 
-        if len(eventStartTimes) != 0:
-            for eventInfoDict in eventStartTimes:
-                eventName = eventInfoDict.keys()[0]
-                if eventName.endswith('_SCHEDULED'):
+    if len(eventStartTimes) != 0:
+        for eventInfoDict in eventStartTimes:
+            eventName = eventInfoDict.keys()[0]
+            if eventName.endswith('_SCHEDULED'):
 
-                    if eventName.startswith('PGE_EVENT'):
-                        tariffs = pgeTariffs
-                    else:
-                        tariffs = sceTariffs
+                if eventName.startswith('PGE_EVENT'):
+                    tariffs = pgeTariffs
+                else:
+                    tariffs = sceTariffs
 
-                    event_st_epoch = eventInfoDict[eventName]["start_time"]
-                    event_et_epoch = eventInfoDict[eventName]["end_time"]
-                    event_day_st_epoch = eventInfoDict[eventName]["event_day"]
-                    st = convertEpochToUTC(event_day_st_epoch)
-                    startTime = convertFromDatetimeToString(st)
-                    # TODO: more flexible
-                    eventHours = getEventHours(startTime=st, num=24)
+                event_st_epoch = eventInfoDict[eventName]["start_time"]
+                event_et_epoch = eventInfoDict[eventName]["end_time"]
+                event_day_st_epoch = eventInfoDict[eventName]["event_day"]
+                st = convertEpochToUTC(event_day_st_epoch)
+                startTime = convertFromDatetimeToString(st)
+                # TODO: more flexible
+                eventHours = getEventHours(startTime=st, num=24)
 
-                    for tariff in tariffs:
-                        prices = getHourlyEventDayPrices(startDateTime=st, tariff_name=tariff)
+                for tariff in tariffs:
+                    prices = getHourlyEventDayPrices(startDateTime=st, tariff_name=tariff)
 
-                        if not includeDemandPricesFlag:
-                            prices = {'energyPrices': prices['energyPrices']}
+                    if not includeDemandPricesFlag:
+                        prices = {'energyPrices': prices['energyPrices']}
 
-                        signals = []
-                        for priceSignal in prices.keys():
-                            # print("LOG--------- price key: ",priceSignal, eventName)
-                            signalId = generateAlphanumericId()
-                            signal = {}
-                            if priceSignal == 'demandPrices':
-                                signal = createPriceSignal(eventHours=eventHours, prices=prices['demandPrices'],
-                                                           isEnergySignal=False, signalId=signalId,
-                                                           signalName='DEMAND_PRICE', currentPrice=0);
-                            else:
-                                signal = createPriceSignal(eventHours=eventHours, prices=prices['energyPrices'],
-                                                           isEnergySignal=True, signalId=signalId,
-                                                           signalName='ENERGY_PRICE', currentPrice=0);
-                            signals.append(signal)
-
-                        eventId = generateAlphanumericId()
-                        modificationNumber = 0
-                        eventStatus = 'far'
-                        requestId = generateAlphanumericId()
-
-                        eventExists = checkIfEventExists(events=events, eventName=eventName, startDate=event_st_epoch, tariff = tariff,
-                                                         status=eventStatus)
-                        if eventExists['prevEventExists']:
-                            # TODO: include prices in log file
-                            prevPrices = getHourlyEventDayPrices(startDateTime=st, tariff_name=tariff)
-                            if not includeDemandPricesFlag:
-                                prevPrices = {'energyPrices': prevPrices['energyPrices']}
-
-                            if arePricesDifferent(prices1=prices, prices2=prevPrices):
-                                # print("LOG------ diff prices", eventName)
-                                modificationNumber = eventExists['prevModNumber'] + 1
-                                eventId = eventExists['prevEventId']
-                            else:
-                                # print("LOG------ same prices", eventName)
-                                continue
-
-                        # print("LOG------ prev event does not exist", eventName)
-                        drSignalFilename = '%s_%s_%s_%d.xml' % (eventName, tariff, eventId, modificationNumber)
-
-                        filename, eventId, modificationNumber, startTime = generateDRSignal(
-                            startTime=startTime,
-                            requestId=requestId,
-                            eventId=eventId,
-                            modificationNumber=modificationNumber,
-                            eventStatus=eventStatus,
-                            drEventFilename=drSignalFilename,
-                            group=True,
-                            groupId=tariff,
-                            signals=signals
-                        )
-
-                        newIdx = 0
-                        if events.empty:
-                            newIdx = 0
+                    signals = []
+                    for priceSignal in prices.keys():
+                        # print("LOG--------- price key: ",priceSignal, eventName)
+                        signalId = generateAlphanumericId()
+                        signal = {}
+                        if priceSignal == 'demandPrices':
+                            signal = createPriceSignal(eventHours=eventHours, prices=prices['demandPrices'],
+                                                       isEnergySignal=False, signalId=signalId,
+                                                       signalName='DEMAND_PRICE', currentPrice=0);
                         else:
-                            newIdx = events.tail(1).index.values[0] + 1
+                            signal = createPriceSignal(eventHours=eventHours, prices=prices['energyPrices'],
+                                                       isEnergySignal=True, signalId=signalId,
+                                                       signalName='ENERGY_PRICE', currentPrice=0);
+                        signals.append(signal)
 
-                        appendToHistory(idx=newIdx,
-                                        eventId=eventId,
-                                        eventName=eventName,
-                                        modNumber=modificationNumber,
-                                        startDate=event_st_epoch,
-                                        status=eventStatus,
-                                        drSignalFilename=drSignalFilename,
-                                        eventsFilename='events.csv',
-                                        tariff=tariff)
-                        events = pandas.read_csv(OADR_PATH+storeEventsFilename, index_col=0)
-                        print("Event created: %s"%drSignalFilename)
-                        if sendToRecipientFlag:
-                            sendSignalToServer(url=recipientURL, filename=drSignalFilename)
+                    eventId = generateAlphanumericId()
+                    modificationNumber = 0
+                    eventStatus = 'far'
+                    requestId = generateAlphanumericId()
 
-            # elif eventName.endswith('_ACTIVE'):
-            # handle active events
-            #     eventStatus = 'active'
-        time.sleep(10)
+                    eventExists = checkIfEventExists(events=events, eventName=eventName, startDate=event_st_epoch, tariff = tariff,
+                                                     status=eventStatus)
+                    if eventExists['prevEventExists']:
+                        # TODO: include prices in log file
+                        prevPrices = getHourlyEventDayPrices(startDateTime=st, tariff_name=tariff)
+                        if not includeDemandPricesFlag:
+                            prevPrices = {'energyPrices': prevPrices['energyPrices']}
+
+                        if arePricesDifferent(prices1=prices, prices2=prevPrices):
+                            # print("LOG------ diff prices", eventName)
+                            modificationNumber = eventExists['prevModNumber'] + 1
+                            eventId = eventExists['prevEventId']
+                        else:
+                            # print("LOG------ same prices", eventName)
+                            continue
+
+                    # print("LOG------ prev event does not exist", eventName)
+                    drSignalFilename = '%s_%s_%s_%d.xml' % (eventName, tariff, eventId, modificationNumber)
+
+                    filename, eventId, modificationNumber, startTime = generateDRSignal(
+                        startTime=startTime,
+                        requestId=requestId,
+                        eventId=eventId,
+                        modificationNumber=modificationNumber,
+                        eventStatus=eventStatus,
+                        drEventFilename=drSignalFilename,
+                        group=True,
+                        groupId=tariff,
+                        signals=signals
+                    )
+
+                    newIdx = 0
+                    if events.empty:
+                        newIdx = 0
+                    else:
+                        newIdx = events.tail(1).index.values[0] + 1
+
+                    appendToHistory(idx=newIdx,
+                                    eventId=eventId,
+                                    eventName=eventName,
+                                    modNumber=modificationNumber,
+                                    startDate=event_st_epoch,
+                                    status=eventStatus,
+                                    drSignalFilename=drSignalFilename,
+                                    eventsFilename='events.csv',
+                                    tariff=tariff)
+                    events = pandas.read_csv(OADR_PATH+storeEventsFilename, index_col=0)
+                    print("Event created: %s"%drSignalFilename)
+                    if sendToRecipientFlag:
+                        sendSignalToServer(url=recipientURL, filename=drSignalFilename)
+
+        # elif eventName.endswith('_ACTIVE'):
+        # handle active events
+        #     eventStatus = 'active'
+
+        # time.sleep(10)

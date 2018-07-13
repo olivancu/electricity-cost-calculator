@@ -43,8 +43,7 @@ def pollPelicanEvents(pelicanConfig, client):
         mdal_functions = [mdal.MAX for i in range(len(names))]
         freq = '30min'
 
-        # dt_now = datetime.datetime.now()
-        dt_now = datetime.datetime(2018, 7, 9, 10, 0, 0)
+        dt_now = datetime.datetime.now()
         st = (dt_now - datetime.timedelta(hours=checkHoursBefore)).strftime("%Y-%m-%d %H:%M:%S PDT")
         et = dt_now.strftime("%Y-%m-%d %H:%M:%S PDT")
 
