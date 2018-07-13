@@ -9,15 +9,14 @@ from utils import *
 from xbos import get_client
 
 def pollEvents(pollSceApi, sceConfig, pollPelicans, pelicanConfig, mdalClient=None):
-    eventStartTimes = {}
+    eventStartTimes = []
 
     if pollSceApi:
         sceStartTimes = pollSCEEvents(sceConfig = sceConfig)
-        eventStartTimes.update(sceStartTimes)
+        eventStartTimes = eventStartTimes + sceStartTimes
     if pollPelicans:
         pelicanStartTimes = pollPelicanEvents(pelicanConfig=pelicanConfig, client=mdalClient)
-        eventStartTimes.update(pelicanStartTimes)
-
+        eventStartTimes = eventStartTimes + pelicanStartTimes
     return eventStartTimes
 
 def getHourlyEventDayPrices(startDateTime, tariff_name='PGEA10', verbose=False):
@@ -153,9 +152,9 @@ if __name__ == '__main__':
         eventStartTimes = pollEvents(pollSceApi=pollSCEApiFlag, sceConfig=sceConfig,
                                      pollPelicans=pollPelicansFlag, pelicanConfig=pelicanConfig, mdalClient=mdalClient)
 
-        if eventStartTimes != {}:
-            # print("LOG--------- not null events ")
-            for eventName in eventStartTimes.keys():
+        if len(eventStartTimes) != 0:
+            for eventInfoDict in eventStartTimes:
+                eventName = eventInfoDict.keys()[0]
                 if eventName.endswith('_SCHEDULED'):
 
                     if eventName.startswith('PGE_EVENT'):
@@ -163,8 +162,10 @@ if __name__ == '__main__':
                     else:
                         tariffs = sceTariffs
 
-                    st_epoch = eventStartTimes[eventName]
-                    st = convertEpochToUTC(st_epoch / 1000.0)
+                    event_st_epoch = eventInfoDict[eventName]["start_time"]
+                    event_et_epoch = eventInfoDict[eventName]["end_time"]
+                    event_day_st_epoch = eventInfoDict[eventName]["event_day"]
+                    st = convertEpochToUTC(event_day_st_epoch)
                     startTime = convertFromDatetimeToString(st)
                     # TODO: more flexible
                     eventHours = getEventHours(startTime=st, num=24)
@@ -195,7 +196,7 @@ if __name__ == '__main__':
                         eventStatus = 'far'
                         requestId = generateAlphanumericId()
 
-                        eventExists = checkIfEventExists(events=events, eventName=eventName, startDate=st_epoch, tariff = tariff,
+                        eventExists = checkIfEventExists(events=events, eventName=eventName, startDate=event_st_epoch, tariff = tariff,
                                                          status=eventStatus)
                         if eventExists['prevEventExists']:
                             # TODO: include prices in log file
@@ -236,7 +237,7 @@ if __name__ == '__main__':
                                         eventId=eventId,
                                         eventName=eventName,
                                         modNumber=modificationNumber,
-                                        startDate=st_epoch,
+                                        startDate=event_st_epoch,
                                         status=eventStatus,
                                         drSignalFilename=drSignalFilename,
                                         eventsFilename='events.csv',
