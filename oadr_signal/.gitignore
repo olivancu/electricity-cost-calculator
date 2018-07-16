@@ -1,0 +1,4 @@
+*.pyc
+events.csv
+*.xml
+signals/*.xml

@@ -39,139 +39,22 @@ By adding objects TariffObj for various periods, the whole tariff is available i
 
 A tariff object is an instance of 'TariffBase' or one of its childen classes. The base information common for each tariff type contains:
 
-- A starting date: the date from which the tariff is valid
-- An endid date: the date until which the tariff is valid
+# Configuring
 
-Each tariff has then a specific rate charge structure. The most common tariff is a Time Of Use (TOU) tariff, for which the rate pattern is identical for a group of days in the year (example: weekdays-summer, weekends-winters) and such a rate may have different values for each hour in a day.
+Set PYTHONPATH to the root directory before running:
+$> export PYTHONPATH=$PYTHONPATH:/path/to/electricity-cost-calculator
 
-A TOU tariff is described by instanciating the TouRateSchedule class with appropriate rate structure description. The latter is a dictionnary that maps a group of months and days in the week to a specific rate signal.
+# From OpenEI tariff to the Bill Calculator
 
-### Example of TouRateSchedule object
-
-The first step is to describe the rates imposed by this TOU tariff. The following example assumed a price that increases from 2pm to 6pm during the weekdays of summer, and is flat for the rest of the time:
-
-```python
-rate_tou=
-{
-        "summer":
-        {
-            "months_list": [5,6,7,8,9,10],
-            "daily_rates":
-            {
-                "weekdays:
-                {
-                    "days_list": [0,1,2,3,4],
-                    "rates": [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
-                },
-                "weekends:
-                {
-                    "days_list": [5,6],
-                    "rates": 0.2
-                },
-            }
-        },
-        "winter":
-        {
-            "months_list": [1,2,3,4,11,12],
-            "daily_rates":
-            {
-                "allweek:
-                {
-                    "days_list": [0,1,2,3,4,6,7],
-                    "rates": 0.2
-                }
-            }
-        },
-    }
-}
-```
-
-The TOU tariff object can then be instanciated. Let's assume this tariff is valid from 2017-01-01 to 2017-12-31.
-
-```python
-  date_start = datetime(2017, 1, 1)
-  date_end = datetime(2017, 12, 31)
-  tariffObj = TouRateSchedule((date_start, date_end), rate_tou)
-```
-
-## From OpenEI tariff to the Bill Calculator
-
-This packages provides a set of functions to pull utility tariffs from the OpenEI API (https://openei.org/services/) and create the corresponding tariff objects to be added to the CostCalculator object.
-The first step consists in creating an OpenEI_tariff that describes the tariff in use. Here is an example for PG&E A-10 TOU at the Secondary level:
-
-```python
-  openei_tariff_data = OpenEI_tariff(utility_id='14328', sector='Commercial', tariff_rate_of_interest='A-10', distrib_level_of_interest='Secondary', tou=True),
-```
-The second step is to call the API:
-
-```python
-  openei_tariff_data.call_api()
-```
-
-This method processes the raw data coming from the API and select only the tariff of interest.
-The last step populates the CostCalculator object based on the OpenEI data:
-
-```python
-  bill_calculator = CostCalculator()
-  tariff_struct_from_openei_data(openei_tariff_data, bill_calculator)
-```
-
-### OpenEI tariff revision
-
-The data got from the OpenEI API might not be up-to-date or contain errors. In this case, the user might save the post-processed API call to a JSON file:
-
-```python
-  openei_tariff.call_api(store_as_json=True)
-```
-The user can then revise the blocks of the "tariff_yyyy.json" and save it to "tariff_yyyy_revised.json". This json file can now be used, instead of the OpenEI API call:
-
-```python
-  tariff_openei_data.read_from_json()
-```
-
-# Bill Calculator methods
-
-## Compute the bill
-
-Given a pandas dataframe 'data_meter' that maps date indexes to power consumption (in W), the following method computes the bill linked to the encoded tariff:
-
-```python
-  bill = bill_calculator.compute_bill(data_meter)
-```
-The returned structure is a dictionary that maps a cost and a metric for each type of tariff. See the method signature for further details.
-
-Optional arguments can be specified:
-
- - 'column_data': select a specific column in the dataframe. Leave it when the dataframe only contains one column.
- - 'monthly_detailed': False by default, assuming that the billing period spans over the whole dataframe. Set if to True to map a bill for each month in the dataframe.
-
-
-## Get the prices signal over a period
-
-The following method generates a pandas dataframe mapping the dates in 'date_range' to the price of electricity, sampled at a period 'timestep'. The dataframe columns points to each type of tariff
-
-```python
-  date_range = (startdate, endate)
-  timestep = TariffElemPeriod.QUARTERLY
-  bill = bill_calculator.get_electricity_price(date_range, timestep)
-```
-
-# OpenEI test file
+## Run the test file
 
 `python openei_test.py`
 
-This outputs the bill linked to an energy meter of a building, given a specific tariff. 
+This must output the electricity bill for jan 1 2017 -> march 31 2017
 
-# Tool limitations and future features
+## TODO list:
 
-## Hypothesis and CostCalculator limitations
-
- - The code has only been tested for Commercial building. The tiers in energy tariff that can be encountered at the residential level are not supported.
- - The price of electricity read from OpenEI is an hourly signal. However, some utilities such as PG&E define periods in the day with a 30-min resolution.
- - The tool doesn't take into account the reactive power cost (power factor adaptation or price per kVARh)
- - The credits for the non-PDP event are applied even on the PDP event days. As the effect is neglectable for the price of energy, it might impact the demand cost. However, the user can read the demand credit days in the bill details and decide to apply it or not.
-
-## Future features
-
- - Tier structure for energy price
- - Real-Time Pricing support
+- The bill for demand charge: add Seasonal demand to TOU demand
+- The bill for energy charge: enable residential tiers
+- OpenEI tariff extraction: create a "tariff structure" (eia ID, Res/Comm/Ind, Trans/Prim/Sec, TOU or not, Option, etc)
+- OpenEI tariff extraction: from the "tariff structure", create the appropriate "TariffBase" children structures
