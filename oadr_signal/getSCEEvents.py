@@ -1,7 +1,7 @@
 import pandas as pd
 # import urllib2
 import datetime
-import lxml as html
+from lxml import html
 import requests
 import pytz
 
@@ -24,7 +24,7 @@ def pollSCEEvents(sceConfig):
     url = sceConfig['url']
     eventTypes = sceConfig['eventTypesToListenFor']  # CPP
 
-    page = requests.get("https://www.sce.openadr.com/dr.website/scepr-event-status.jsf")
+    page = requests.get(url)
     tree = html.fromstring(page.content.replace("\r", "").replace("\t", ""))
 
     events = []

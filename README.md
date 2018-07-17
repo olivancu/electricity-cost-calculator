@@ -10,9 +10,13 @@ The tool aims to wrap up the complexity of the bill calculation, that can includ
 
 The folder 'cost_calculator' contains the source code of the Bill Calculator. The rest of the README describes how to instanciate the main classes and their useful methods.
 
+## Add to PythonPath
+
+export PYTHONPATH=$PYTHONPATH:/path/to/git/repo
+
 ## Packages dependency
 
-pandas, holidays, datetime, enum, pytz, requests
+pandas, holidays, datetime, enum, pytz, requests, lxml, xbos
 
 # Bill Calculator creation
 
