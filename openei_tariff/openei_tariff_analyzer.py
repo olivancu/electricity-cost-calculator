@@ -1,20 +1,22 @@
 __author__ = 'Olivier Van Cutsem'
-#bill_calculator_lib.
-from cost_calculator.tariff_structure import *
-from cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
 import requests
 import json
 import pytz
-from env import *
+import os
+
+#bill_calculator_lib.
+from cost_calculator.tariff_structure import *
+from cost_calculator.rate_structure import *
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
+THIS_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
+PDP_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
 
-# THIS_PATH = 'openei_tariff/' #'bill_calculator_lib/'+
-# PDP_PATH = 'openei_tariff/'  # './'
 SUFFIX_REVISED = '_revised'  # this is the suffix we added to the json filename after correctly the OpenEI data manually
+
 
 class OpenEI_tariff(object):
 
@@ -153,7 +155,7 @@ class OpenEI_tariff(object):
         # Store the result of this processed API request in a JSON file that has the name built from the tariff info
         if store_as_json is not None:
             filename = self.json_filename
-            with open(OPENEI_PATH+filename+'.json', 'w') as outfile:
+            with open(THIS_PATH+filename+'.json', 'w') as outfile:
                 json.dump(data_filtered, outfile, indent=2, sort_keys=True)
 
     def read_from_json(self, filename=None):
@@ -166,7 +168,7 @@ class OpenEI_tariff(object):
         """
         try:
             if filename == None:
-                filename = OPENEI_PATH+self.json_filename+SUFFIX_REVISED+'.json'
+                filename = THIS_PATH+self.json_filename+SUFFIX_REVISED+'.json'
             with open(filename, 'r') as input_file:
                 try:
                     self.data_openei = json.load(input_file)
