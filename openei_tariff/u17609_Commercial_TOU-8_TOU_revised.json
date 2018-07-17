@@ -5,6 +5,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 6.60
         }
       ], 
@@ -15,6 +20,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -1429,6 +1439,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 6.49
         }
       ], 
@@ -1439,6 +1454,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -2853,6 +2873,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 6.49
         }
       ], 
@@ -2863,6 +2888,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -4277,6 +4307,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 6.49
         }
       ], 
@@ -4287,6 +4322,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -5701,6 +5741,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 6.35
         }
       ], 
@@ -5711,6 +5756,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -7125,6 +7175,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 4.79
         }
       ], 
@@ -7135,6 +7190,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -8549,6 +8609,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 3.21
         }
       ], 
@@ -8559,6 +8624,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -9973,6 +10043,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 3.21
         }
       ], 
@@ -9983,6 +10058,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -11397,6 +11477,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 3.63
         }
       ], 
@@ -11407,6 +11492,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -12821,6 +12911,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 3.63
         }
       ], 
@@ -12831,6 +12926,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -14245,6 +14345,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 3.63
         }
       ], 
@@ -14255,6 +14360,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -15669,6 +15779,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": 4.17
         }
       ], 
@@ -15679,6 +15794,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0
@@ -17093,6 +17213,11 @@
     "demandratestructure": [
       [
         {
+          "rate": 0
+        }
+      ], 
+      [
+        {
           "rate": 4.17
         }
       ], 
@@ -17103,6 +17228,11 @@
       ]
     ], 
     "pdp_credit_demandratestructure": [
+      [
+        {
+          "rate": 0
+        }
+      ],
       [
         {
           "rate": 0

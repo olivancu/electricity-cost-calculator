@@ -31,12 +31,10 @@ def pollSCEEvents(sceConfig):
     for eventType in eventTypes:
         for element in tree.iter():
             if str(element.text).find(eventType) != -1 and str(element.tag) == 'td':
-                print("%s - %s" % (element.tag, element.text))
                 eventName = eventType+'_COMMERCIAL_SCHEDULED'
                 detail_list = [element.text]
 
                 for cpp_detail in element.itersiblings():
-                    print("%s - %s" % (cpp_detail.tag, cpp_detail.text))
                     detail_list.append(cpp_detail.text)
 
                 i = 0
