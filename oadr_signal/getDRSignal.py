@@ -213,19 +213,34 @@ if __name__ == '__main__':
                             continue
 
                     # print("LOG------ prev event does not exist", eventName)
-                    drSignalFilename = '%s_%s_%s_%d.xml' % (eventName, tariff, eventId, modificationNumber)
 
-                    filename, eventId, modificationNumber, startTime = generateDRSignal(
-                        startTime=startTime,
-                        requestId=requestId,
-                        eventId=eventId,
-                        modificationNumber=modificationNumber,
-                        eventStatus=eventStatus,
-                        drEventFilename=drSignalFilename,
-                        group=True,
-                        groupId=tariff,
-                        signals=signals
-                    )
+                    # filenames of all the created files
+                    drSignalFilenames = ""
+
+                    # one file for demand prices, one file for energy prices
+                    for signal in signals:
+                        drSignalFilename = '%s_%s_%s_%d_%s.xml' % (eventName, tariff, eventId, modificationNumber, signal['signalType'])
+
+                        filename, eventId, modificationNumber, startTime = generateDRSignal(
+                            startTime=startTime,
+                            requestId=requestId,
+                            eventId=eventId,
+                            modificationNumber=modificationNumber,
+                            eventStatus=eventStatus,
+                            drEventFilename=drSignalFilename,
+                            group=True,
+                            groupId=tariff,
+                            signals=[signal]
+                        )
+
+                        print("Event created: %s" % drSignalFilename)
+                        if sendToRecipientFlag:
+                            rsp = sendSignalToServer(url=recipientURL, filename=drSignalFilename)
+
+                        if drSignalFilenames == "":
+                            drSignalFilenames = drSignalFilename
+                        else:
+                            drSignalFilenames = drSignalFilenames + '_' + drSignalFilename
 
                     newIdx = 0
                     if events.empty:
@@ -239,13 +254,10 @@ if __name__ == '__main__':
                                     modNumber=modificationNumber,
                                     startDate=event_st_epoch,
                                     status=eventStatus,
-                                    drSignalFilename=drSignalFilename,
-                                    eventsFilename='events.csv',
+                                    drSignalFilename=drSignalFilenames,
+                                    eventsFilename=storeEventsFilename,
                                     tariff=tariff)
                     events = pandas.read_csv(OADR_PATH+storeEventsFilename, index_col=0)
-                    print("Event created: %s"%drSignalFilename)
-                    if sendToRecipientFlag:
-                        sendSignalToServer(url=recipientURL, filename=drSignalFilename)
 
         # elif eventName.endswith('_ACTIVE'):
         # handle active events
