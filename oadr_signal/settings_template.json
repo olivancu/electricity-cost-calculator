@@ -1,0 +1,8 @@
+{
+    "sce":{
+        "url": <api_endpoint>,
+        "eventsToListenFor": [<list_of_events>],
+        "eventsHistoryFilename": <file_to_store_read_events_history>
+    },
+    "pge":{}
+}

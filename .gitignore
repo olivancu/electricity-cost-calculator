@@ -1,2 +1,6 @@
 *.pyc
 /.idea
+!settings_template.json
+.DS_Store
+.AppleDouble
+.LSOverride
