@@ -72,8 +72,8 @@ def pollPelicanEvents(pelicanConfig, client):
     return events
     # return [{
     #     'PGE_EVENT_SCHEDULED': {
-    #         "start_time": 1504645200,
-    #         "end_time": 1504659600,
-    #         "event_day": 1504594800
+    #         "start_time": 1536181200,
+    #         "end_time": 1536195600,
+    #         "event_day": 1536130800
     #     }
     # }]

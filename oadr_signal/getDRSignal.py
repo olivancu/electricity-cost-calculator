@@ -64,8 +64,8 @@ def getHourlyDayPrices(startDateTime, tariff_name='PGEA10', verbose=False, isItE
         pdp_events = list(populate_pdp_events_from_json(openei_tarif_obj=tariff_openei_data, pdp_event_filenames='PDP_events.json'))
         utilityId = int(tariff_openei_data.req_param['eia'])
         # TODO: make more generic
-        st = eventStartDate.strftime("%Y-%m-%dT14:00:00-08:00")
-        et = eventStartDate.strftime("%Y-%m-%dT18:00:00-08:00")
+        st = eventStartDate.strftime("%Y-%m-%dT00:00:00-08:00")
+        et = eventStartDate.strftime("%Y-%m-%dT23:59:59-08:00")
 
         if not tariff_openei_data.checkIfPDPDayPresent(utilityId=utilityId, st=st, et=et):
             pdp_events.append({'utility_id': utilityId, 'start_date': st, 'end_date': et})
