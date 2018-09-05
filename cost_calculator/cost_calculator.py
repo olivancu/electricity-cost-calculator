@@ -1,11 +1,10 @@
 __author__ = 'Olivier Van Cutsem'
 
 from rate_structure import *
-from tariff_structure import TariffType, TariffElemPeriod
+from tariff_structure import TariffType
 from dateutil.relativedelta import relativedelta
-import time
 import pandas as pd
-import calendar
+import pytz
 
 
 class CostCalculator(object):
@@ -307,12 +306,12 @@ class CostCalculator(object):
             (start_sel, end_sel) = dates
             if start_sel.tzinfo is None and len(list_struct) > 0:
                 first_block = list_struct[0]
-                start_sel = start_sel.replace(tzinfo=first_block.startdate.tzinfo)
+                start_sel = start_sel.replace(tzinfo=pytz.timezone('UTC'))
 
             if end_sel.tzinfo is None and len(list_struct) > 0:
                 first_block = list_struct[0]
-                end_sel = end_sel.replace(tzinfo=first_block.enddate.tzinfo)
-
+                end_sel = end_sel.replace(tzinfo=pytz.timezone('UTC'))
+                
             return [obj for obj in list_struct if ((obj.startdate <= start_sel <= obj.enddate) or (start_sel <= obj.startdate <= end_sel))]
 
     def update_bill_structure(self, intermediate_monthly_bill, label_tariff, new_data):

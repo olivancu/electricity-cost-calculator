@@ -80,6 +80,6 @@ def sendSignalToServer(url, filename):
     xml = open(OADR_PATH+"signals/"+filename, "r").read()
 
     headers = {'Content-Type': 'application/xml'}  # set what your server accepts
-    requests.post(url, data=xml, headers=headers).text
+    rsp = requests.post(url, data=xml, headers=headers)
 
-    return
+    return rsp

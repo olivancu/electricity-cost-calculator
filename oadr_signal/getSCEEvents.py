@@ -60,6 +60,13 @@ def pollSCEEvents(sceConfig):
                         i += 5
 
     return events
+    # return [{
+    #     'CPP_COMMERCIAL_SCHEDULED': {
+    #         "start_time": 1536181200,
+    #         "end_time": 1536195600,
+    #         "event_day": 1536130800
+    #     }
+    # }]
 
 
 def _local_to_utc_epoch(timestamp, local_zone="America/Los_Angeles"):
