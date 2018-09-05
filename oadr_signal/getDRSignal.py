@@ -69,7 +69,6 @@ def getHourlyDayPrices(startDateTime, tariff_name='PGEA10', verbose=False, isItE
 
         if not tariff_openei_data.checkIfPDPDayPresent(utilityId=utilityId, st=st, et=et):
             pdp_events.append({'utility_id': utilityId, 'start_date': st, 'end_date': et})
-            print({'utility_id': utilityId, 'start_date': st, 'end_date': et})
             update_pdp_json(openei_tarif_obj=tariff_openei_data, pdp_dict=pdp_events, pdp_event_filenames='PDP_events.json')
 
     if tariff_openei_data.read_from_json() == 0:  # Reading revised JSON blocks containing the utility rates
@@ -85,11 +84,11 @@ def getHourlyDayPrices(startDateTime, tariff_name='PGEA10', verbose=False, isItE
     pd_prices, map_prices = bill_calc.get_electricity_price(timestep=TariffElemPeriod.HOURLY,
                                                             range_date=(dtime.datetime(eventStartDate.year,
                                                                                           eventStartDate.month,
-                                                                                          eventStartDate.day, 0, 0, 0),
+                                                                                          eventStartDate.day, 0, 0, 0).replace(tzinfo=pytz.timezone('US/Pacific')),
                                                                         dtime.datetime(eventStartDate.year,
                                                                                           eventStartDate.month,
                                                                                           eventStartDate.day, 23, 59,
-                                                                                          59)))
+                                                                                          59).replace(tzinfo=pytz.timezone('US/Pacific'))))
     pd_prices = pd_prices.fillna(0)
     energyPrices = pd_prices.customer_energy_charge.values + pd_prices.pdp_non_event_energy_credit.values + pd_prices.pdp_event_energy_charge.values
     demandPrices = pd_prices.customer_demand_charge_season.values + pd_prices.pdp_non_event_demand_credit.values + pd_prices.customer_demand_charge_tou.values
