@@ -16,7 +16,7 @@ export PYTHONPATH=$PYTHONPATH:/path/to/git/repo
 
 ## Packages dependency
 
-pandas, holidays, datetime, enum, pytz, requests, lxml, xbos
+pandas, holidays, datetime, enum34 1.16, pytz, requests, lxml, xbos
 
 ## Configuring
 
