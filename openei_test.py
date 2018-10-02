@@ -174,6 +174,6 @@ if __name__ == '__main__':
 
     # print price_elec['pdp_event_energy_charge'].fillna(0)
 
-    price_elec['pdp_event_energy_charge'].fillna(0).plot()
+    price_elec.fillna(0).plot()
     plt.grid()
     plt.show()
