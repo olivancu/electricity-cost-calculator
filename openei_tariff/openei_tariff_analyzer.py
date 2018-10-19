@@ -1,15 +1,14 @@
 __author__ = 'Olivier Van Cutsem'
 
+from ..cost_calculator.tariff_structure import *
+from ..cost_calculator.rate_structure import *
+
 import time
 from datetime import datetime
 import requests
 import json
 import pytz
 import os
-
-#bill_calculator_lib.
-from cost_calculator.tariff_structure import *
-from cost_calculator.rate_structure import *
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 THIS_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
