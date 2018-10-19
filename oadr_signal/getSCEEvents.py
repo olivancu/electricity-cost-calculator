@@ -71,6 +71,6 @@ def pollSCEEvents(sceConfig):
 
 def _local_to_utc_epoch(timestamp, local_zone="America/Los_Angeles"):
     timestamp_new = pd.to_datetime(timestamp, infer_datetime_format=True, errors='coerce')
-    timestamp_new = timestamp_new.tz_localize(local_zone).tz_convert(pytz.utc)
+    timestamp_new = timestamp_new.tz_localize(local_zone)
     timestamp_new = timestamp_new.strftime('%s')
     return timestamp_new
