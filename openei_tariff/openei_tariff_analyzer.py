@@ -1,7 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
 
-from ..cost_calculator.tariff_structure import *
-from ..cost_calculator.rate_structure import *
+from cost_calculator.tariff_structure import *
+from cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
