@@ -1,7 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
 
-from ..cost_calculator.tariff_structure import *
-from ..cost_calculator.rate_structure import *
+from cost_calculator.tariff_structure import *
+from cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
@@ -306,8 +306,8 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
 
         pdp_data_filter = [event for event in pdp_data if event['utility_id'] == int(openei_tarif_obj.req_param['eia'])]
         for pdp_event in pdp_data_filter:
-            pdp_dates = datetime.strptime(pdp_event['start_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('US/Pacific')), datetime.strptime(
-                pdp_event['end_date'], '%Y-%m-%dT%H:%M:%S-08:00').replace(tzinfo=pytz.timezone('US/Pacific'))
+            pdp_dates = datetime.strptime(pdp_event['start_date'], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=pytz.timezone('UTC')), datetime.strptime(
+                pdp_event['end_date'], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=pytz.timezone('UTC'))
             tariff_pdp_obj = get_pdp_energycharge(openei_tarif_obj, pdp_dates[0])
             if tariff_pdp_obj is not None:
                 bill_calculator.add_tariff(TouEnergyChargeTariff(pdp_dates, tariff_pdp_obj),
