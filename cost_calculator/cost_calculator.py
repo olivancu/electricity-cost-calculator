@@ -221,9 +221,15 @@ class CostCalculator(object):
 
             for m_key, bill_per_label in bill_struct.items():
                 for lab_tariff, data in bill_per_label.items():
-                    acc_tot += data[1]  # second item in data is in dollar
-                    acc_per_chargetype[self.type_tariffs_map[lab_tariff]] += data[1]
-                    acc_per_label[lab_tariff] += data[1]
+                    if self.type_tariffs_map[lab_tariff] is not ChargeType.DEMAND:
+                        cost_per_tariff = data[1]
+                    else:
+                        cost_per_tariff = 0.0
+                        for p, data_demand in data.items():
+                            cost_per_tariff += p * data_demand['max-demand']
+                    acc_tot += cost_per_tariff  # second item in data is in dollar
+                    acc_per_chargetype[self.type_tariffs_map[lab_tariff]] += cost_per_tariff
+                    acc_per_label[lab_tariff] += cost_per_tariff
         else:
 
             # The bill is already aggregated for all the months
