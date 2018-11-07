@@ -10,7 +10,7 @@ import pytz
 class CostCalculator(object):
     """
     This class is used to manipulate the building electricity cost:
-        - Bill calculation given a Smart Meter power timeseries
+        - Bill calculation given a Smart Meter energy timeseries
         - Electricity price timeseries between two dates
         - Cost coefficients over a given period, for a linear optimization problem
         - Metrics related to the tariff maximum demand
@@ -92,9 +92,9 @@ class CostCalculator(object):
             }
         }
 
-        :param df: a pandas dataframe containing power consumption (in W) in the column 'column_data'.
+        :param df: a pandas dataframe containing energy consumption (in Wh) in the column 'column_data'.
         If column data is None, it is assumed that only 1 column makes up the df
-        :param column_data: [optional] the label of the column containing the power consumption values
+        :param column_data: [optional] the label of the column containing the energy consumption values
         :param monthly_detailed: [optional] if False, it is assumed that the df contains values for ONE billing period.
         if True, the bill is detailed for each month of the calendar. Set to False by default.
         :return: a dictionary representing the bill as described above
