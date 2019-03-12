@@ -16,7 +16,7 @@ export PYTHONPATH=$PYTHONPATH:/path/to/git/repo
 
 ## Packages dependency
 
-pandas, holidays, datetime, enum, pytz, requests, lxml, xbos
+pandas, holidays, datetime, enum34 1.1.6, pytz, requests, lxml, xbos
 
 ## Configuring
 
@@ -142,7 +142,7 @@ The user can then revise the blocks of the "tariff_yyyy.json" and save it to "ta
 
 ## Compute the bill
 
-Given a pandas dataframe 'data_meter' that maps date indexes to power consumption (in W), the following method computes the bill linked to the encoded tariff:
+Given a pandas dataframe 'data_meter' that maps date indexes to energy consumption (in Wh), the following method computes the bill linked to the encoded tariff:
 
 ```python
   bill = bill_calculator.compute_bill(data_meter)

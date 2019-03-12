@@ -1,8 +1,6 @@
 __author__ = 'Olivier Van Cutsem'
 
 from cost_calculator.cost_calculator import CostCalculator
-import json
-import pandas as pd
 from openei_tariff.openei_tariff_analyzer import *
 import matplotlib.pyplot as plt
 import pytz
@@ -105,18 +103,17 @@ if __name__ == '__main__':
 
     print("--- Loading meter data ...")
 
-    meter_uuid = '68e04192-e924-36b8-9c5e-f072bd93ed07'
-    print("Data from GreenButton meter uuid '{0}'".format(meter_uuid))
+    meter_uuid = 'a373b62e-04f3-3c1e-b27d-279f792f4b18'
+    print("Data from GreenButton meter uuid '{0}' for test purpose".format(meter_uuid))
 
-    # df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
-    # df.index.name = 'Time'
-    # df.index = df.index.map(pd.to_datetime)
-    #
-    # df["date"] = df.index.date
-    #
-    # data_meter = df[meter_uuid]
-    # data_meter = utc_to_local(data_meter, local_zone="America/Los_Angeles")
-    # Specify the Utility tariff we're going to analyze
+    df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
+    df.index.name = 'Time'
+    df.index = df.index.map(pd.to_datetime)
+
+    df["date"] = df.index.date
+
+    data_meter = df[meter_uuid]
+    data_meter = utc_to_local(data_meter, local_zone="America/Los_Angeles")
 
     print("--- Calling API ...")
     tariff_openei_data = map_site_to_tariff[meter_uuid]  # This points to an object
@@ -149,24 +146,25 @@ if __name__ == '__main__':
     print(" ----------------------")
 
     # BILLING PERIOD
-    #start_date_bill = datetime(2017, 7, 23, hour=0, minute=0, second=0)
-    #end_date_bill = datetime(2017, 8, 21, hour=23, minute=59, second=59)
+
+
+    start_date_bill = datetime(2017, 7, 1, hour=0, minute=0, second=0)
+    end_date_bill = datetime(2017, 8, 30, hour=23, minute=59, second=59)
+    mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
+    data_meter = data_meter.loc[mask]
+    data_meter = data_meter.fillna(0)
+
+    # 1) Get the bill over the period
+    print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
+    bill = bill_calc.compute_bill(data_meter, monthly_detailed=True)
+
+    t, tt, ttt = bill_calc.print_aggregated_bill(bill)
+    print t
+    # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
+
 
     start_date_bill = datetime(2018, 9, 1, hour=0, minute=0, second=0)
     end_date_bill = datetime(2018, 9, 7, hour=23, minute=59, second=59)
-
-    # mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
-    # data_meter = data_meter.loc[mask]
-    # data_meter = data_meter.fillna(0)
-    #
-    # # 1) Get the bill over the period
-    # print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
-    # bill = bill_calc.compute_bill(data_meter)
-    #
-    # t, tt, ttt = bill_calc.print_aggregated_bill(bill, True)
-
-    # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
-
     timestep = TariffElemPeriod.QUARTERLY  # We want a 1h period
 
     price_elec, map = bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
