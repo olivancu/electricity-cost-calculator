@@ -1,7 +1,10 @@
 __author__ = 'Olivier Van Cutsem'
 
-from ..cost_calculator.tariff_structure import *
-from ..cost_calculator.rate_structure import *
+import os, sys
+sys.path.append(os.path.abspath("../cost_calculator/"))
+
+from cost_calculator.tariff_structure import *
+from cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
@@ -175,11 +178,11 @@ class OpenEI_tariff(object):
                 try:
                     self.data_openei = json.load(input_file)
                 except ValueError:
-  
+
                     print('cant parse json')
                     return 1
-        except Exception as e: 
-            
+        except Exception as e:
+
             print('cant open file' + str(e))
             return 2
 

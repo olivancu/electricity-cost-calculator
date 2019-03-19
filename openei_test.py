@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pytz
 
 # ----------- TEST DEMO -------------- #
+READ_FROM_JSON = False
 
 # UTILITY ID: {PG&E: 14328, SCE: 17609}
 
@@ -120,13 +121,18 @@ if __name__ == '__main__':
 
     #tariff_openei_data.call_api(store_as_json=True)  # WARNING: this will erase the JSON with OpenEI data !
 
-    if tariff_openei_data.read_from_json() == 0:  # This calls the API to internally store the raw data that has to be analyzed, and write as a JSON file
-        print "Tariff read from JSON successful"
-    else:
-        print "An error occurred when reading the JSON file"
-        exit()
+    if READ_FROM_JSON:
 
-    print("--- Bill calculation ...")
+        if tariff_openei_data.read_from_json() == 0:  # This calls the API to internally store the raw data that has to be analyzed, and write as a JSON file
+            print "Tariff read from JSON successful"
+        else:
+            print "An error occurred when reading the JSON file"
+            exit()
+
+        print("--- Bill calculation ...")
+    else:
+        tariff_openei_data.call_api(store_as_json=True)
+
     bill_calc = CostCalculator()
     #
     # # Load the tariff information and fill the object

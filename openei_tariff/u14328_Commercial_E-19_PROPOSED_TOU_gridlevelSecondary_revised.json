@@ -8918,6 +8918,12 @@
           "rate": 0,
           "unit": "kWh"
         }
+      ],
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
       ]
     ],
     "pdp_charge_energy": [
@@ -10336,6 +10342,12 @@
     "enddate": "2016-07-31T23:59:59.000Z",
     "energycomments": "Period 1: Off Peak Winter, Period 2: Part Peak Winter, Period 3:Off Peak Summer , Period 4: Part Peak Summer, Period 5: Peak Summer",
     "pdp_credit_energyratestructure": [
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
+      ],
       [
         {
           "rate": 0,
@@ -11812,6 +11824,12 @@
           "rate": 0,
           "unit": "kWh"
         }
+      ],
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
       ]
     ],
     "pdp_charge_energy": [
@@ -13225,6 +13243,12 @@
     "eiaid": 14328,
     "enddate": "2016-12-31T23:59:59.000Z",
     "pdp_credit_energyratestructure": [
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
+      ],
       [
         {
           "rate": 0,
@@ -14696,6 +14720,12 @@
           "rate": 0,
           "unit": "kWh"
         }
+      ],
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
       ]
     ],
     "pdp_charge_energy": [
@@ -16108,6 +16138,12 @@
     "eiaid": 14328,
     "enddate": "2017-12-31T23:59:59.000Z",
     "pdp_credit_energyratestructure": [
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
+      ],
       [
         {
           "rate": 0,
@@ -17578,6 +17614,12 @@
           "rate": 0,
           "unit": "kWh"
         }
+      ],
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
       ]
     ],
     "pdp_charge_energy": [
@@ -18325,6 +18367,16 @@
       ],
       [
         {
+          "rate": 0
+        }
+      ],
+      [
+        {
+          "rate": 0
+        }
+      ],
+      [
+        {
           "rate": -1.44
         }
       ],
@@ -18400,6 +18452,12 @@
     "eiaid": 14328,
     "enddate": "2018-12-31T23:59:59.000Z",
     "pdp_credit_energyratestructure": [
+      [
+        {
+          "rate": 0,
+          "unit": "kWh"
+        }
+      ],
       [
         {
           "rate": 0,
@@ -18567,5 +18625,183 @@
     "uri": "https://openei.org/apps/IURDB/rate/view/586ec8ea682bea4eea938603",
     "utility": "Pacific Gas & Electric Co",
     "voltagecategory": "Secondary"
+  },
+  {
+  "approved": true,
+  "country": "USA",
+  "demandratestructure": [
+    [
+      {
+        "rate": 0,
+        "name": "off_peak_winter"
+      }
+    ],
+    [
+      {
+        "rate": 1.48,
+        "name": "mid_peak_winter"
+      }
+    ],
+    [
+      {
+        "rate": 0,
+        "name": "off_peak_summer"
+      }
+    ],
+    [
+      {
+        "rate": 2.85,
+        "name": "mid_peak_summer"
+      }
+    ],
+    [
+      {
+        "rate": 18.35,
+        "name": "on_peak_summer"
+      }
+    ]
+  ],
+  "demandrateunit": "kW",
+  "demandunits": "kW",
+  "demandweekdayschedule": [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+  ],
+  "demandweekendschedule": [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+  ],
+  "description": "Ongoing daily Time-of-Use (TOU) meter charges applicable to customers taking \r\nvoluntary TOU service under this rate schedule will no longer be applied if the customer \r\nhas a SmartMeter\u2122 installed.\r\n\r\nPeak Day Pricing Rates are applicable to customers taking this rate. A maximum of fifteen (15) PDP events and a minimum of nine (9) PDP events may be called in any calendar year.",
+  "eiaid": 14328,
+  "enddate": "2020-12-31T23:59:59.000Z",
+  "energycomments": "Period 1: Off Peak Winter, Period 2: Part Peak Winter, Period 3:Off Peak Summer , Period 4: Part Peak Summer, Period 5: Peak Summer",
+  "energyratestructure": [
+    [
+      {
+        "rate": 0.100,
+        "unit": "kWh",
+        "name": "off_peak_winter"
+      }
+    ],
+    [
+      {
+        "rate": 0.126,
+        "unit": "kWh",
+        "name": "mid_peak_winter"
+      }
+    ],
+    [
+      {
+        "rate": 0.100,
+        "unit": "kWh",
+        "name": "off_peak_summer"
+      }
+    ],
+    [
+      {
+        "rate": 0.117,
+        "unit": "kWh",
+        "name": "mid_peak_summer"
+      }
+    ],
+    [
+      {
+        "rate": 0.142,
+        "unit": "kWh",
+        "name": "on_peak_summer"
+      }
+    ],
+    [
+      {
+        "rate": 0.064,
+        "unit": "kWh",
+        "name": "super_offpeak_spring"
+      }
+    ]
+  ],
+  "energyweekdayschedule": [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 1, 1, 1, 1, 1, 0, 0, 0],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+  ],
+  "energyweekendschedule": [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 5, 5, 1, 1, 1, 1, 1, 0, 0, 0],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0]
+  ],
+  "fixedchargefirstmeter": 139,
+  "fixedchargeunits": "$/month",
+  "flatdemandmonths": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "flatdemandstructure": [
+    [
+      {
+        "rate": 19.45
+      }
+    ]
+  ],
+  "flatdemandunit": "kW",
+  "label": "55fc81b5682bea28da64e266",
+  "name": "E-19 Medium General Demand- TOU (Secondary, Mandatory)",
+  "peakkwcapacitymax": 999,
+  "peakkwcapacitymin": 500,
+  "sector": "Commercial",
+  "source": "http://www.pge.com/tariffs/tm2/pdf/ELEC_SCHEDS_E-19.pdf",
+  "sourceparent": "http://www.pge.com/tariffs/ERS.SHTML",
+  "startdate": "2019-01-01T00:00:00.000Z",
+  "supersedes": "539f6fcbec4f024411ecd2d1",
+  "uri": "https://openei.org/apps/IURDB/rate/view/55fc81b5682bea28da64e266",
+  "utility": "Pacific Gas & Electric Co",
+  "voltagecategory": "Secondary"
   }
 ]
