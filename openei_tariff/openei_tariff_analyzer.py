@@ -12,6 +12,7 @@ import requests
 import json
 import pytz
 import os
+from dateutil.parser import parse
 
 # ----------- FUNCTIONS SPECIFIC TO OpenEI REQUESTS -------------- #
 THIS_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
@@ -309,8 +310,8 @@ def tariff_struct_from_openei_data(openei_tarif_obj, bill_calculator, pdp_event_
 
         pdp_data_filter = [event for event in pdp_data if event['utility_id'] == int(openei_tarif_obj.req_param['eia'])]
         for pdp_event in pdp_data_filter:
-            pdp_dates = datetime.strptime(pdp_event['start_date'], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=pytz.timezone('UTC')), datetime.strptime(
-                pdp_event['end_date'], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=pytz.timezone('UTC'))
+
+            pdp_dates = parse(pdp_event['start_date']).replace(tzinfo=pytz.timezone('UTC')), parse(pdp_event['end_date']).replace(tzinfo=pytz.timezone('UTC'))
             tariff_pdp_obj = get_pdp_energycharge(openei_tarif_obj, pdp_dates[0])
             if tariff_pdp_obj is not None:
                 bill_calculator.add_tariff(TouEnergyChargeTariff(pdp_dates, tariff_pdp_obj),
