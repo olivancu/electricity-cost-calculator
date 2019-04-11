@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pytz
 
 # ----------- TEST DEMO -------------- #
-READ_FROM_JSON = False
+READ_FROM_JSON = True
 
 # UTILITY ID: {PG&E: 14328, SCE: 17609}
 
