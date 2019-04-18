@@ -53,6 +53,61 @@ def checkAndAddNormalDays(eventStartTimes):
 
     return eventStartTimes
 
+def checkAndAddHistoricDays(start, end):
+    eventStartTimes = []
+    df = pd.read_csv(OADR_PATH+"event_days2018.csv", index_col=0, parse_dates=['start_date', 'end_date', 'date'])
+
+    st = start
+    while st <= end:
+        st_str = st.strftime("%Y-%m-%d")
+        event_df = df.loc[df.date.astype(str).str.contains(st_str)]
+        if not event_df.empty:
+            pdp_utilities = []
+            for i in range(len(event_df)):
+                row = event_df.iloc[i]
+                utility = row['utility']
+                if utility not in pdp_utilities:
+                    pdp_utilities.append(utility)
+                
+                event_name = '%s_EVENT_SCHEDULED' % utility
+                event_day = row['date'].date().strftime("%s")
+                start_time = (row['start_date'] + dtime.timedelta(hours=13)).strftime("%s")
+                end_time = (row['start_date'] + dtime.timedelta(hours=17)).strftime("%s")
+                print(event_name, event_day, start_time, end_time, row['date'].date())
+                eventStartTimes.append(
+                    {
+                        event_name: {
+                            'event_day': float(event_day),
+                            'start_time': float(start_time),
+                            'end_time': float(end_time)
+                        }
+                    }
+                )
+            if 'PGE' not in pdp_utilities:
+                eventStartTimes.append({
+                    'PGE_NORMAL_DAY': {
+                        'date': float(st.date().strftime("%s"))
+                    }
+                })
+            if 'SCE' not in pdp_utilities:
+                eventStartTimes.append({
+                    'SCE_NORMAL_DAY': {
+                        'date': float(st.date().strftime("%s"))
+                    }
+                })
+        else:
+            eventStartTimes.append({
+                'PGE_NORMAL_DAY': {
+                    'date': float(st.date().strftime("%s"))
+                }
+            })
+            eventStartTimes.append({
+                'SCE_NORMAL_DAY': {
+                    'date': float(st.date().strftime("%s"))
+                }
+            })
+        st = st + dtime.timedelta(days=1)
+    return eventStartTimes
 
 
 def getHourlyDayPrices(startDateTime, tariff_name='PGEA10', verbose=False, isItEventDay=True):
@@ -165,6 +220,11 @@ if __name__ == '__main__':
     sceTariffs = params['sceTariffs']
     pgeTariffs = params['pgeTariffs']
 
+    collectHistoricData = params.get('historicData', False)
+    if collectHistoricData:
+        historicDataStartTime = dtime.datetime.strptime(params.get("historicStartDate"), "%Y-%m-%dT%H:%M:%S")
+        historicDataEndTime = dtime.datetime.strptime(params.get("historicEndDate"), "%Y-%m-%dT%H:%M:%S")
+
     sceConfig = None
     if pollSCEApiFlag:
         if 'sce' in config.keys():
@@ -185,9 +245,11 @@ if __name__ == '__main__':
 
     events = getEventsHistory(eventsFilename=storeEventsFilename)
 
-    eventStartTimes = pollEvents(pollSceApi=pollSCEApiFlag, sceConfig=sceConfig,
-                                 pollPelicans=pollPelicansFlag, pelicanConfig=pelicanConfig, mdalClient=mdalClient)
-    checkAndAddNormalDays(eventStartTimes)
+    #eventStartTimes = pollEvents(pollSceApi=pollSCEApiFlag, sceConfig=sceConfig,
+    #                             pollPelicans=pollPelicansFlag, pelicanConfig=pelicanConfig, mdalClient=mdalClient)
+
+    #checkAndAddNormalDays(eventStartTimes)
+    eventStartTimes = checkAndAddHistoricDays(start=historicDataStartTime, end=historicDataEndTime)
 
     for eventInfoDict in eventStartTimes:
         eventName = eventInfoDict.keys()[0]
@@ -217,6 +279,7 @@ if __name__ == '__main__':
         startTime = convertFromDatetimeToString(st)
         # TODO: more flexible
         eventHours = getEventHours(startTime=st, num=24)
+        print(startTime)
 
         for tariff in tariffs:
             prices = getHourlyDayPrices(startDateTime=st, tariff_name=tariff, isItEventDay=isItAnEventDay)
@@ -285,6 +348,7 @@ if __name__ == '__main__':
                 print("Event created: %s" % drSignalFilename)
                 if sendToRecipientFlag:
                     rsp = sendSignalToServer(url=recipientURL, filename=drSignalFilename)
+                    time.sleep(3)
 
                 if drSignalFilenames == "":
                     drSignalFilenames = drSignalFilename
@@ -312,5 +376,5 @@ if __name__ == '__main__':
         # elif eventName.endswith('_ACTIVE'):
         # handle active events
         #     eventStatus = 'active'
-
-        # time.sleep(10)
+        if sendToRecipientFlag:
+            time.sleep(60)
