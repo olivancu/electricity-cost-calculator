@@ -9,6 +9,17 @@ import pytz
 READ_FROM_JSON = True
 
 # UTILITY ID: {PG&E: 14328, SCE: 17609}
+map_tariff_per_type = {
+    'pge_A-10': '4c95836f-6bdb-3adc-ac5e-4c787ae027c7',
+    'pge_A-1': '4d95d5ce-de62-3449-bd58-4dcad75b526d',
+    'pge_A-6': 'e9c51ce5-4aa1-399c-8172-92073e273a0b',
+    'pge_E-19': '68e04192-e924-36b8-9c5e-f072bd93ed07',
+    'sce_TOU-8': 'CSU-Dominguez-Hills',
+    'sce_TOU-GS-3': 'Jesse-Turner-Fontana-Community-Center',
+    'pge_E-20': 'PGEE20',
+    'bldg90_flatrate': 'FLAT06'
+ }
+
 
 # TODO: read this from a CSV ...
 map_site_to_tariff = {
@@ -66,7 +77,22 @@ map_site_to_tariff = {
                   phasewing=None,
                   tou=True,
                   option_mandatory=['Option CPP', '2kV - 50kV'],
-                  option_exclusion=['Option B', 'Option A'])
+                  option_exclusion=['Option B', 'Option A']),
+'PGEE20':
+    OpenEI_tariff(utility_id='14328',
+                  sector='Commercial',
+                  tariff_rate_of_interest='E-20',
+                  distrib_level_of_interest='Primary',
+                  phasewing=None,
+                  tou=True),
+'FLAT06':
+    OpenEI_tariff(utility_id='90',
+                  sector='Commercial',
+                  tariff_rate_of_interest='FLAT-06',
+                  phasewing=None,
+                  tou=False,
+                  distrib_level_of_interest=None)
+
 }
 
 # useful functions
@@ -103,81 +129,93 @@ if __name__ == '__main__':
     # Instantiate the bill-calculator object
 
     print("--- Loading meter data ...")
+    start_date_sig= datetime(2017, 1, 1, hour=0, minute=0, second=0)
+    end_date_sig = datetime(2019, 4, 17, hour=23, minute=59, second=59)
+    timestep = TariffElemPeriod.HOURLY  # We want a 1h period
 
-    meter_uuid = 'a373b62e-04f3-3c1e-b27d-279f792f4b18'
-    print("Data from GreenButton meter uuid '{0}' for test purpose".format(meter_uuid))
 
-    df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
-    df.index.name = 'Time'
-    df.index = df.index.map(pd.to_datetime)
+    for tariff_name, meter_uuid in map_tariff_per_type.items():
+        print(" -- Creating signal for {}".format(tariff_name))
+        bill_calc = CostCalculator()
+        tariff_openei_data = map_site_to_tariff[meter_uuid]
+        tariff_openei_data.read_from_json()
+        tariff_struct_from_openei_data(tariff_openei_data, bill_calc)  # This analyses the raw data from the openEI request and populate the "CostCalculator" object
 
-    df["date"] = df.index.date
+        price_elec, map = bill_calc.get_electricity_price((start_date_sig, end_date_sig), timestep)
+        price_elec.to_csv("{}.csv".format(tariff_name))
 
-    data_meter = df[meter_uuid]
-    data_meter = utc_to_local(data_meter, local_zone="America/Los_Angeles")
-
-    print("--- Calling API ...")
-    tariff_openei_data = map_site_to_tariff[meter_uuid]  # This points to an object
-
-    #tariff_openei_data.call_api(store_as_json=True)  # WARNING: this will erase the JSON with OpenEI data !
-
-    if READ_FROM_JSON:
-
-        if tariff_openei_data.read_from_json() == 0:  # This calls the API to internally store the raw data that has to be analyzed, and write as a JSON file
-            print "Tariff read from JSON successful"
-        else:
-            print "An error occurred when reading the JSON file"
-            exit()
-
-        print("--- Bill calculation ...")
-    else:
-        tariff_openei_data.call_api(store_as_json=True)
-
-    bill_calc = CostCalculator()
+    # df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
+    # df.index.name = 'Time'
+    # df.index = df.index.map(pd.to_datetime)
     #
-    # # Load the tariff information and fill the object
+    # df["date"] = df.index.date
+    #
+    # data_meter = df[meter_uuid]
+    # data_meter = utc_to_local(data_meter, local_zone="America/Los_Angeles")
+    #
+    # print("--- Calling API ...")
+    # tariff_openei_data = map_site_to_tariff[meter_uuid]  # This points to an object
+    #
+    # #tariff_openei_data.call_api(store_as_json=True)  # WARNING: this will erase the JSON with OpenEI data !
+    #
+    # if READ_FROM_JSON:
+    #
+    #     if tariff_openei_data.read_from_json() == 0:  # This calls the API to internally store the raw data that has to be analyzed, and write as a JSON file
+    #         print "Tariff read from JSON successful"
+    #     else:
+    #         print "An error occurred when reading the JSON file"
+    #         exit()
+    #
+    #     print("--- Bill calculation ...")
+    # else:
+    #     tariff_openei_data.call_api(store_as_json=True)
+    #
+    # bill_calc = CostCalculator()
+    # #
+    # # # Load the tariff information and fill the object
+    #
+    # tariff_struct_from_openei_data(tariff_openei_data, bill_calc)  # This analyses the raw data from the openEI request and populate the "CostCalculator" object
+    #
+    # # Useful information of the Tariff
+    # # print("Tariff {0} of utility #{1} (TOU {2}, Grid level {3}, Phase-wing {4})".format(tariff_openei_data.tariff_rate_of_interest,
+    # #                                                                                     tariff_openei_data.req_param['eia'],
+    # #                                                                                     tariff_openei_data.tou,
+    # #                                                                                     tariff_openei_data.distrib_level_of_interest,
+    # #                                                                                     tariff_openei_data.phase_wing))
+    # #
+    # # print(" - Found {0} tariff blocks from OpenEI".format(len(bill_calc.get_tariff_struct(label_tariff=str(TariffType.ENERGY_CUSTOM_CHARGE.value)))))
+    # # print(" - Valid if peak demand is between {0} kW and {1} kW".format(bill_calc.tariff_min_kw, bill_calc.tariff_max_kw))
+    # # print(" - Valid if energy demand is between {0} kWh and {1} kWh".format(bill_calc.tariff_min_kwh, bill_calc.tariff_max_kwh))
+    # # print(" ----------------------")
+    #
+    # # BILLING PERIOD
+    #
+    #
+    # # start_date_bill = datetime(2017, 7, 1, hour=0, minute=0, second=0)
+    # # end_date_bill = datetime(2017, 8, 30, hour=23, minute=59, second=59)
+    # # mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
+    # # data_meter = data_meter.loc[mask]
+    # # data_meter = data_meter.fillna(0)
+    #
+    # # 1) Get the bill over the period
+    # # print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
+    # # bill = bill_calc.compute_bill(data_meter, monthly_detailed=True)
+    #
+    # # t, tt, ttt = bill_calc.print_aggregated_bill(bill)
+    # # print t
+    # # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
+    #
+    #
+    # start_date_sig= datetime(2018, 9, 1, hour=0, minute=0, second=0)
+    # end_date_sig = datetime(2018, 9, 7, hour=23, minute=59, second=59)
+    # timestep = TariffElemPeriod.QUARTERLY  # We want a 1h period
+    #
+    # price_elec, map = bill_calc.get_electricity_price((start_date_sig, end_date_sig), timestep)
+    # #print list(price_elec.loc[:, 'customer_energy_charge'])
+    #
+    # # print price_elec['pdp_event_energy_charge'].fillna(0)
+    # print price_elec.to_json()
 
-    tariff_struct_from_openei_data(tariff_openei_data, bill_calc)  # This analyses the raw data from the openEI request and populate the "CostCalculator" object
-
-    # Useful information of the Tariff
-    print("Tariff {0} of utility #{1} (TOU {2}, Grid level {3}, Phase-wing {4})".format(tariff_openei_data.tariff_rate_of_interest,
-                                                                                        tariff_openei_data.req_param['eia'],
-                                                                                        tariff_openei_data.tou,
-                                                                                        tariff_openei_data.distrib_level_of_interest,
-                                                                                        tariff_openei_data.phase_wing))
-
-    print(" - Found {0} tariff blocks from OpenEI".format(len(bill_calc.get_tariff_struct(label_tariff=str(TariffType.ENERGY_CUSTOM_CHARGE.value)))))
-    print(" - Valid if peak demand is between {0} kW and {1} kW".format(bill_calc.tariff_min_kw, bill_calc.tariff_max_kw))
-    print(" - Valid if energy demand is between {0} kWh and {1} kWh".format(bill_calc.tariff_min_kwh, bill_calc.tariff_max_kwh))
-    print(" ----------------------")
-
-    # BILLING PERIOD
-
-
-    start_date_bill = datetime(2017, 7, 1, hour=0, minute=0, second=0)
-    end_date_bill = datetime(2017, 8, 30, hour=23, minute=59, second=59)
-    mask = (data_meter.index >= start_date_bill) & (data_meter.index <= end_date_bill)
-    data_meter = data_meter.loc[mask]
-    data_meter = data_meter.fillna(0)
-
-    # 1) Get the bill over the period
-    print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
-    bill = bill_calc.compute_bill(data_meter, monthly_detailed=True)
-
-    t, tt, ttt = bill_calc.print_aggregated_bill(bill)
-    print t
-    # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
-
-
-    start_date_bill = datetime(2018, 9, 1, hour=0, minute=0, second=0)
-    end_date_bill = datetime(2018, 9, 7, hour=23, minute=59, second=59)
-    timestep = TariffElemPeriod.QUARTERLY  # We want a 1h period
-
-    price_elec, map = bill_calc.get_electricity_price((start_date_bill, end_date_bill), timestep)
-    #print list(price_elec.loc[:, 'customer_energy_charge'])
-
-    # print price_elec['pdp_event_energy_charge'].fillna(0)
-
-    price_elec.fillna(0).plot()
-    plt.grid()
-    plt.show()
+    # price_elec.fillna(0).plot()
+    # plt.grid()
+    # plt.show()

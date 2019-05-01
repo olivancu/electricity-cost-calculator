@@ -32,7 +32,7 @@ class OpenEI_tariff(object):
     LIMIT = '500'
     ORDER_BY_SORT = 'startdate'
 
-    def __init__(self, utility_id, sector, tariff_rate_of_interest, distrib_level_of_interest='Secondary', phasewing='Single', tou=False, pdp=True, option_mandatory=None, option_exclusion=None):
+    def __init__(self, utility_id=0, sector='commercial', tariff_rate_of_interest='tou', distrib_level_of_interest='Secondary', phasewing='Single', tou=False, pdp=True, option_mandatory=None, option_exclusion=None):
 
         self.req_param = {}
 
