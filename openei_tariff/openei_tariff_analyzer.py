@@ -3,8 +3,8 @@ __author__ = 'Olivier Van Cutsem'
 import os, sys
 sys.path.append(os.path.abspath("../cost_calculator/"))
 
-from cost_calculator.tariff_structure import *
-from cost_calculator.rate_structure import *
+from tariff_structure import *
+from rate_structure import *
 
 import time
 from datetime import datetime
