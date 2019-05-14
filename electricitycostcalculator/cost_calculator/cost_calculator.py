@@ -1,7 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
 
-from rate_structure import *
-from tariff_structure import TariffType
+from .rate_structure import *
+from .tariff_structure import TariffType
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import pytz
@@ -205,7 +205,7 @@ class CostCalculator(object):
         monthly_detailed = False
 
         # If the first keys of the dict point to smth that is not the tariff type, this is a monthly bill
-        first_keys_bill_struct = bill_struct.keys()
+        first_keys_bill_struct = list(bill_struct.keys())
         if first_keys_bill_struct[0] not in self.__tariffstructures.keys():
             monthly_detailed = True
 
@@ -285,8 +285,8 @@ class CostCalculator(object):
             if tariff_label in self.DEFAULT_TARIFF_MAP.keys():
                 tariff_type = self.DEFAULT_TARIFF_MAP[tariff_label]
             else:
-                print "[in add_tariff] Couldn't add the tariff object:" \
-                      "The tariff_type is missing and couldn't be retrieved from the label '{0}'".format(tariff_label)  # debug
+                print("[in add_tariff] Couldn't add the tariff object:" \
+                      "The tariff_type is missing and couldn't be retrieved from the label '{0}'".format(tariff_label))  # debug
                 return
 
         # The label tariff is a new one:
