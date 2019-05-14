@@ -2,11 +2,13 @@ __author__ = 'Olivier Van Cutsem'
 
 
 import os, sys
-sys.path.append(os.path.abspath("../cost_calculator/"))
-sys.path.append(os.path.abspath("../openei_tariff/"))
+sys.path.append(os.path.abspath("../"))  # to access env.py
+from env import COSTCALCULATOR_PATH, OPENEI_PATH
+sys.path.append(COSTCALCULATOR_PATH)
+sys.path.append(OPENEI_PATH)
 
-from cost_calculator import CostCalculator
-from openei_tariff_analyzer import *
+from cost_calculator.cost_calculator import CostCalculator
+from openei_tariff.openei_tariff_analyzer import *
 import matplotlib.pyplot as plt
 import pytz
 import json

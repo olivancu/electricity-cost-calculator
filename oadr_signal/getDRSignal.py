@@ -1,7 +1,15 @@
 from DR_template import getSignalString
 import os.path
-from oadr_signal.getSCEEvents import *
-from oadr_signal.getPelicanDREvents import *
+import os, sys
+
+# Import cost_calculator and open_ei
+sys.path.append(os.path.abspath("../"))  # to access env.py
+from env import COSTCALCULATOR_PATH, OPENEI_PATH, OADR_PATH
+sys.path.append(COSTCALCULATOR_PATH)
+sys.path.append(OPENEI_PATH)
+
+from getSCEEvents import *
+from getPelicanDREvents import *
 from tariff_maps import tariff_maps
 from cost_calculator.cost_calculator import *
 from openei_tariff.openei_tariff_analyzer import *

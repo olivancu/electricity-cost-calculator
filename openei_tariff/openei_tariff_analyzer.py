@@ -1,10 +1,13 @@
 __author__ = 'Olivier Van Cutsem'
 
+# Import COST CALCULATOR LIB
 import os, sys
-sys.path.append(os.path.abspath("../cost_calculator/"))
+sys.path.append(os.path.abspath("../"))  # to access env.py
+from env import COSTCALCULATOR_PATH
+sys.path.append(COSTCALCULATOR_PATH)
 
-from tariff_structure import *
-from rate_structure import *
+from cost_calculator.tariff_structure import *
+from cost_calculator.rate_structure import *
 
 import time
 from datetime import datetime
