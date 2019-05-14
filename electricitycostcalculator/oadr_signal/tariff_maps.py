@@ -1,6 +1,5 @@
 import os, sys
-sys.path.append(os.path.abspath("../openei_tariff/"))
-from openei_tariff_analyzer import OpenEI_tariff
+from electricitycostcalculator.openei_tariff.openei_tariff_analyzer import OpenEI_tariff
 
 tariff_maps= {
             'PGEA10': OpenEI_tariff(utility_id='14328', sector='Commercial', tariff_rate_of_interest='A-10', distrib_level_of_interest='Secondary', phasewing=None, tou=True),

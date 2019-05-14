@@ -1,9 +1,6 @@
 import random
 import string
 import datetime as dtime
-import os, sys
-sys.path.append(os.path.abspath("../"))  # to access env.py
-from env import *
 
 import pandas
 import pytz
