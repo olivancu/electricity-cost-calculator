@@ -1,19 +1,13 @@
-from DR_template import getSignalString
+from .DR_template import getSignalString
 import os.path
 import os, sys
 
-# Import cost_calculator and open_ei
-sys.path.append(os.path.abspath("../"))  # to access env.py
-from env import COSTCALCULATOR_PATH, OPENEI_PATH, OADR_PATH
-sys.path.append(COSTCALCULATOR_PATH)
-sys.path.append(OPENEI_PATH)
-
-from getSCEEvents import *
-from getPelicanDREvents import *
-from tariff_maps import tariff_maps
+from .getSCEEvents import *
+from .getPelicanDREvents import *
+from .tariff_maps import tariff_maps
 from cost_calculator.cost_calculator import *
 from openei_tariff.openei_tariff_analyzer import *
-from utils import *
+from .utils import *
 from xbos import get_client
 
 def pollEvents(pollSceApi, sceConfig, pollPelicans, pelicanConfig, mdalClient=None):
@@ -81,7 +75,7 @@ def getHourlyDayPrices(startDateTime, tariff_name='PGEA10', verbose=False, isItE
 
     if tariff_openei_data.read_from_json() == 0:  # Reading revised JSON blocks containing the utility rates
         if verbose:
-            print ("Tariff read from JSON successful")
+            print("Tariff read from JSON successful")
     else:
         print("An error occurred when reading the JSON file" ) # <------------------- handle error
         return
@@ -149,7 +143,7 @@ def generateDRSignal(startTime, requestId, eventId, modificationNumber, eventSta
 
 def getMdalClient(pelicanConfig):
     client = None
-    if "xbosEntityPath" in pelicanConfig.keys():
+    if "xbosEntityPath" in list(pelicanConfig.keys()):
         entityPath = pelicanConfig["xbosEntityPath"]
         c = get_client(entity=entityPath)
         client = mdal.MDALClient("xbos/mdal", client=c)
@@ -175,7 +169,7 @@ if __name__ == '__main__':
 
     sceConfig = None
     if pollSCEApiFlag:
-        if 'sce' in config.keys():
+        if 'sce' in list(config.keys()):
             sceConfig = config['sce']
 
         else:
@@ -184,7 +178,7 @@ if __name__ == '__main__':
 
     pelicanConfig = None
     if pollPelicansFlag:
-        if 'pelican' in config.keys():
+        if 'pelican' in list(config.keys()):
             pelicanConfig = config['pelican']
             mdalClient = getMdalClient(pelicanConfig=pelicanConfig)
         else:
@@ -198,7 +192,7 @@ if __name__ == '__main__':
     checkAndAddNormalDays(eventStartTimes)
 
     for eventInfoDict in eventStartTimes:
-        eventName = eventInfoDict.keys()[0]
+        eventName = list(eventInfoDict.keys())[0]
         isItAnEventDay = True
         if eventName.endswith('_SCHEDULED'):
 
@@ -233,7 +227,7 @@ if __name__ == '__main__':
                 prices = {'energyPrices': prices['energyPrices']}
 
             signals = []
-            for priceSignal in prices.keys():
+            for priceSignal in list(prices.keys()):
                 # print("LOG--------- price key: ",priceSignal, eventName)
                 signalId = generateAlphanumericId()
                 signal = {}
@@ -290,7 +284,7 @@ if __name__ == '__main__':
                     signals=[signal]
                 )
 
-                print("Event created: %s" % drSignalFilename)
+                print(("Event created: %s" % drSignalFilename))
                 if sendToRecipientFlag:
                     rsp = sendSignalToServer(url=recipientURL, filename=drSignalFilename)
 

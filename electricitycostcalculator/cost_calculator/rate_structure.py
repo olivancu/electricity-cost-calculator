@@ -143,9 +143,9 @@ class TouRateSchedule:
         :return:
         """
 
-        for m_lab, m_data in self.__rates.items():
+        for m_lab, m_data in list(self.__rates.items()):
             if m_date in m_data[self.MONTHLIST_KEY]:
-                for d_lab, d_data in m_data[self.DAILY_RATE_KEY].items():
+                for d_lab, d_data in list(m_data[self.DAILY_RATE_KEY].items()):
                     if d_date in d_data[self.DAYSLIST_KEY]:
                         return d_data[self.RATES_KEY]
 

@@ -55,8 +55,8 @@ def appendToHistory(idx, eventId, eventName, modNumber, startDate, status, drSig
 
 
 def arePricesDifferent(prices1, prices2):
-    keys1 = prices1.keys()
-    keys2 = prices2.keys()
+    keys1 = list(prices1.keys())
+    keys2 = list(prices2.keys())
 
     if len(keys1) != len(keys2):
         return True

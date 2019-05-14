@@ -71,7 +71,7 @@ class OpenEI_tariff(object):
         data_filtered = []
 
         for data_block in data_openei['items']:
-            print(data_block['name'])
+            print((data_block['name']))
             # Check the tariff name, this is stored in the field "name"
             if self.tariff_rate_of_interest not in data_block['name'] and self.tariff_rate_of_interest + '-' not in data_block['name']:
                 continue
@@ -182,7 +182,7 @@ class OpenEI_tariff(object):
                     return 1
         except Exception as e:
 
-            print('cant open file' + str(e))
+            print(('cant open file' + str(e)))
             return 2
 
         # Encode the start/end dates as integers

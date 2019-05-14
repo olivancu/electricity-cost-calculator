@@ -343,11 +343,11 @@ class TouDemandChargeTariff(TimeOfUseTariff):
                 mask_price24h = mask_price
                 if len(mask_price) != len(daily_rate):  # if this price is already in the list, take the corresponding mask ...
                     price_key = metric_price_mult * day_p
-                    if price_key in max_per_set.keys():
+                    if price_key in list(max_per_set.keys()):
                         mask_price24h = max_per_set[price_key]['mask']
 
                 add_this_demand = True
-                existing_mask_price = [k for k, v in max_per_set.items() if v['mask'] == mask_price24h]
+                existing_mask_price = [k for k, v in list(max_per_set.items()) if v['mask'] == mask_price24h]
                 if len(existing_mask_price) > 0:  # Find the identical mask over the day
                     existing_mask_price = existing_mask_price[0]
                     if max_power_period > max_per_set[existing_mask_price]['max-demand']:  # Check if the corresponding demand is greater
