@@ -37,9 +37,9 @@ def pollPelicanEvents(pelicanConfig, client):
     uuid_tariff_map = pelicanConfig['pelican_uuid_tariff_map']
     checkHoursBefore = pelicanConfig['checkHoursBefore']
     events = []
-    for tariffName in uuid_tariff_map.keys():
-        sensors = uuid_tariff_map[tariffName].values()
-        names = [col for col in uuid_tariff_map[tariffName].keys()]
+    for tariffName in list(uuid_tariff_map.keys()):
+        sensors = list(uuid_tariff_map[tariffName].values())
+        names = [col for col in list(uuid_tariff_map[tariffName].keys())]
         mdal_functions = [mdal.MAX for i in range(len(names))]
         freq = '30min'
 

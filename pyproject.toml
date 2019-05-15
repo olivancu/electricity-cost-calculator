@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "electricitycostcalculator"
+version = "0.1.0"
+description = ""
+authors = ["Olivier Van Cutsem", "Anand Krishnan Prakash"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+matplotlib = "^3.0"
+pandas = "^0.24.2"
+pytz = "^2019.1"
+requests = "^2.21"
+lxml = "^4.3"
+holidays = "^0.9.10"
+
+[tool.poetry.dev-dependencies]
+2to3 = "^1.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

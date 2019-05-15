@@ -1,7 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
 
-from rate_structure import *
-from tariff_structure import TariffType
+from .rate_structure import *
+from .tariff_structure import TariffType
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import pytz
@@ -51,7 +51,7 @@ class CostCalculator(object):
             self.type_tariffs_map = type_tariffs_map
 
         # Initialize the list of "tariff blocks"
-        for label, type_tariff in self.type_tariffs_map.items():
+        for label, type_tariff in list(self.type_tariffs_map.items()):
             self.__tariffstructures[label] = self.generate_type_tariff(type_tariff)
 
         # Useful data about the tariff
@@ -108,7 +108,7 @@ class CostCalculator(object):
         t_i = datetime(year=t_s.year, month=t_s.month, day=1, tzinfo=t_s.tzinfo)
         while t_i <= df.index[-1]:
             ret[t_i.strftime("%Y-%m")] = {}
-            for k in self.__tariffstructures.keys():
+            for k in list(self.__tariffstructures.keys()):
                 if self.type_tariffs_map[k] == ChargeType.DEMAND:
                     ret[t_i.strftime("%Y-%m")][k] = {}  # a dict of price -> (max, cost)
                 else:
@@ -117,11 +117,11 @@ class CostCalculator(object):
             t_i += relativedelta(months=+1)
 
         # Compute the bill for each of the tariff type, for each month
-        for label, tariff_data in self.__tariffstructures.items():
+        for label, tariff_data in list(self.__tariffstructures.items()):
             l_blocks = self.get_tariff_struct(label, (df.index[0], df.index[-1]))  # get all the tariff blocks for this period and this tariff type
             for tariff_block in l_blocks:
                 tariff_cost_list = tariff_block.compute_bill(df, column_data)  # this returns a dict of time-period pointing to tuple that contains both the metric of the bill and the cost
-                for time_label, bill_data in tariff_cost_list.items():
+                for time_label, bill_data in list(tariff_cost_list.items()):
                     self.update_bill_structure(ret[time_label], label, bill_data)
 
         if monthly_detailed is False:  # Aggregate all the months
@@ -152,7 +152,7 @@ class CostCalculator(object):
 
         # Populate the dataframe for each label, for each period
         ret_df = None
-        for label_tariff in self.__tariffstructures.keys():
+        for label_tariff in list(self.__tariffstructures.keys()):
 
             if self.type_tariffs_map[label_tariff] == ChargeType.FIXED:  # fixed charges not in the elec price signal
                 continue
@@ -205,8 +205,8 @@ class CostCalculator(object):
         monthly_detailed = False
 
         # If the first keys of the dict point to smth that is not the tariff type, this is a monthly bill
-        first_keys_bill_struct = bill_struct.keys()
-        if first_keys_bill_struct[0] not in self.__tariffstructures.keys():
+        first_keys_bill_struct = list(bill_struct.keys())
+        if first_keys_bill_struct[0] not in list(self.__tariffstructures.keys()):
             monthly_detailed = True
 
         if monthly_detailed is True:  # This supposes the bill is calculated per natural month of the calendar
@@ -216,16 +216,16 @@ class CostCalculator(object):
             acc_tot = 0.0
             acc_per_chargetype = {ChargeType.FIXED: 0.0, ChargeType.ENERGY: 0.0, ChargeType.DEMAND: 0.0}
             acc_per_label = {}
-            for k in self.type_tariffs_map.keys():
+            for k in list(self.type_tariffs_map.keys()):
                 acc_per_label[k] = 0.0
 
-            for m_key, bill_per_label in bill_struct.items():
-                for lab_tariff, data in bill_per_label.items():
+            for m_key, bill_per_label in list(bill_struct.items()):
+                for lab_tariff, data in list(bill_per_label.items()):
                     if self.type_tariffs_map[lab_tariff] is not ChargeType.DEMAND:
                         cost_per_tariff = data[1]
                     else:
                         cost_per_tariff = 0.0
-                        for p, data_demand in data.items():
+                        for p, data_demand in list(data.items()):
                             cost_per_tariff += p * data_demand['max-demand']
                     acc_tot += cost_per_tariff  # second item in data is in dollar
                     acc_per_chargetype[self.type_tariffs_map[lab_tariff]] += cost_per_tariff
@@ -237,12 +237,12 @@ class CostCalculator(object):
             acc_tot = 0.0
             acc_per_chargetype = {ChargeType.FIXED: 0.0, ChargeType.ENERGY: 0.0, ChargeType.DEMAND: 0.0}
 
-            for lab_tariff, data in bill_struct.items():
+            for lab_tariff, data in list(bill_struct.items()):
                 if self.type_tariffs_map[lab_tariff] is not ChargeType.DEMAND:
                     cost_per_tariff = data[1]
                 else:
                     cost_per_tariff = 0.0
-                    for p, data_demand in data.items():
+                    for p, data_demand in list(data.items()):
                         cost_per_tariff += p * data_demand['max-demand']
 
                 acc_tot += cost_per_tariff  # second item in data is in dollar
@@ -252,18 +252,18 @@ class CostCalculator(object):
 
         if verbose:
             # Total
-            print("\n| Aggregated bill: {0} ($)".format(acc_tot))
+            print(("\n| Aggregated bill: {0} ($)".format(acc_tot)))
 
             # Per type
             print("\n| Total bill per type of charge:")
-            for t_key, v in acc_per_chargetype.items():
-                print(" - Charge type '{0}': {1} ($)".format(str(t_key.value), v))
+            for t_key, v in list(acc_per_chargetype.items()):
+                print((" - Charge type '{0}': {1} ($)".format(str(t_key.value), v)))
 
             # Per label
             print("\n| Total bill per type or tariff:")
-            for l_key, v in acc_per_label.items():
+            for l_key, v in list(acc_per_label.items()):
                 # TODO: print nicely the details ...
-                print(" - Type '{0}': {1} ($)".format(str(l_key), v))
+                print((" - Type '{0}': {1} ($)".format(str(l_key), v)))
 
         return acc_tot, acc_per_chargetype, acc_per_label
 
@@ -282,15 +282,15 @@ class CostCalculator(object):
         if tariff_type is None:
             tariff_type = tariff_label
 
-            if tariff_label in self.DEFAULT_TARIFF_MAP.keys():
+            if tariff_label in list(self.DEFAULT_TARIFF_MAP.keys()):
                 tariff_type = self.DEFAULT_TARIFF_MAP[tariff_label]
             else:
-                print "[in add_tariff] Couldn't add the tariff object:" \
-                      "The tariff_type is missing and couldn't be retrieved from the label '{0}'".format(tariff_label)  # debug
+                print(("[in add_tariff] Couldn't add the tariff object:" \
+                      "The tariff_type is missing and couldn't be retrieved from the label '{0}'".format(tariff_label)))  # debug
                 return
 
         # The label tariff is a new one:
-        if tariff_label not in self.__tariffstructures.keys():
+        if tariff_label not in list(self.__tariffstructures.keys()):
             self.__tariffstructures[tariff_label] = self.generate_type_tariff(tariff_type)
 
         self.__tariffstructures[tariff_label]['list_blocks'].append(tariff_obj)
@@ -336,10 +336,10 @@ class CostCalculator(object):
         type_of_tariff = self.__tariffstructures[label_tariff]['type']
 
         if type_of_tariff == ChargeType.DEMAND:  # Demand: apply MAX
-            for p in new_data.keys():  # For each price -> dict (mask, max-p, date-max-p)
+            for p in list(new_data.keys()):  # For each price -> dict (mask, max-p, date-max-p)
 
                 this_mask = new_data[p]['mask']  # get the new data mask
-                existing_mask_price = [k for k, v in intermediate_monthly_bill[label_tariff].items()  if v['mask'] == this_mask]
+                existing_mask_price = [k for k, v in list(intermediate_monthly_bill[label_tariff].items())  if v['mask'] == this_mask]
 
                 if len(existing_mask_price) > 0:  # this mask has already been seen: APPLY MAX
                     existing_mask_price = existing_mask_price[0]
@@ -362,15 +362,15 @@ class CostCalculator(object):
         """
 
         data_merge = None
-        for m, data_per_label in monthly_bill.items():
+        for m, data_per_label in list(monthly_bill.items()):
             if data_merge is None:
                 data_merge = data_per_label
             else:
-                for label_tariff, data_tariff in data_per_label.items():
+                for label_tariff, data_tariff in list(data_per_label.items()):
                     if self.type_tariffs_map[label_tariff] == ChargeType.DEMAND:  # take max
-                        for p, data in data_tariff.items():  # For each price -> dict (mask, max, date)
+                        for p, data in list(data_tariff.items()):  # For each price -> dict (mask, max, date)
                             this_mask = data['mask']  # get the new data mask
-                            existing_mask_price = [k for k, v in data_merge[label_tariff].items() if v['mask'] == this_mask]
+                            existing_mask_price = [k for k, v in list(data_merge[label_tariff].items()) if v['mask'] == this_mask]
 
                             if len(existing_mask_price) > 0:  # this mask has already been seen: APPLY MAX
                                 existing_mask_price = existing_mask_price[0]

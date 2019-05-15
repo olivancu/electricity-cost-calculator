@@ -1,14 +1,14 @@
 __author__ = 'Olivier Van Cutsem'
 
 
-import os, sys
-sys.path.append(os.path.abspath("../"))  # to access env.py
-from env import COSTCALCULATOR_PATH, OPENEI_PATH
-sys.path.append(COSTCALCULATOR_PATH)
-sys.path.append(OPENEI_PATH)
+#import os, sys
+#sys.path.append(os.path.abspath("../"))  # to access env.py
+#from env import COSTCALCULATOR_PATH, OPENEI_PATH
+#sys.path.append(COSTCALCULATOR_PATH)
+#sys.path.append(OPENEI_PATH)
 
-from cost_calculator.cost_calculator import CostCalculator
-from openei_tariff.openei_tariff_analyzer import *
+from electricitycostcalculator.cost_calculator.cost_calculator import CostCalculator
+from electricitycostcalculator.openei_tariff.openei_tariff_analyzer import *
 import matplotlib.pyplot as plt
 import pytz
 import json
@@ -23,10 +23,9 @@ def utc_to_local(data, local_zone="America/Los_Angeles"):
     This method takes in pandas DataFrame and adjusts index according to timezone in which is requested by user
     '''
 
-    data.index = data.index.tz_localize(pytz.utc).tz_convert(
-        local_zone)  # accounts for localtime shift
+    data = data.tz_convert(local_zone)  # accounts for localtime shift
     # Gets rid of extra offset information so can compare with csv data
-    data.index = data.index.tz_localize(None)
+    data = data.tz_localize(None)
 
     return data
 
@@ -46,8 +45,8 @@ if __name__ == '__main__':
     print("--- Loading meter data ...")
     df = pd.read_csv('meter.csv', index_col=0)  # import times series energy data for meters
     df.index.name = 'Time'
-    df.index = df.index.map(pd.to_datetime)
-    df["date"] = df.index.date
+    df = df.set_index(pd.to_datetime(df.index, infer_datetime_format=True, utc=True))
+    df["date"] = df.index
 
     data_meter = df[meter_uuid]
     data_meter = utc_to_local(data_meter, local_zone="America/Los_Angeles")
@@ -57,9 +56,9 @@ if __name__ == '__main__':
     if READ_FROM_JSON:
 
         if tariff_openei_data.read_from_json() == 0:
-            print "Tariff read from JSON successful"
+            print("Tariff read from JSON successful")
         else:
-            print "An error occurred when reading the JSON file"
+            print("An error occurred when reading the JSON file")
             exit()
 
         print("--- Bill calculation ...")
@@ -94,7 +93,7 @@ if __name__ == '__main__':
     print("Calculating the bill for the period {0} to {1}".format(start_date_bill, end_date_bill))
     bill = bill_calc.compute_bill(data_meter, monthly_detailed=True)
     t, tt, ttt = bill_calc.print_aggregated_bill(bill)
-    print t
+    print(t)
 
     # 2) Get the electricity price per type of metric, for the 7th of JAN 2017
     start_date_sig= datetime(2019, 7, 1, hour=0, minute=0, second=0)
