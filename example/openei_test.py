@@ -1,17 +1,7 @@
 __author__ = 'Olivier Van Cutsem'
 
-
-#import os, sys
-#sys.path.append(os.path.abspath("../"))  # to access env.py
-#from env import COSTCALCULATOR_PATH, OPENEI_PATH
-#sys.path.append(COSTCALCULATOR_PATH)
-#sys.path.append(OPENEI_PATH)
-
 from electricitycostcalculator.cost_calculator.cost_calculator import CostCalculator
 from electricitycostcalculator.openei_tariff.openei_tariff_analyzer import *
-import matplotlib.pyplot as plt
-import pytz
-import json
 import pandas as pd
 
 # ----------- TEST DEMO -------------- #
@@ -102,6 +92,4 @@ if __name__ == '__main__':
 
     price_elec, map = bill_calc.get_electricity_price((start_date_sig, end_date_sig), timestep)
 
-    price_elec.fillna(0).plot()
-    plt.grid()
-    plt.show()
+    print(price_elec)
