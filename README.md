@@ -1,6 +1,10 @@
-# Project description & installation
+# Installation
 
-The Bill Calculator tool intends to provide a generic tool for manipulating the tariffs of electricity, with a emphasis on US tariffs. A tariff is composed of various type of charges and credits, that fall into one of the following rate type:
+
+
+# Project description
+
+The Bill Calculator intends to provide a generic tool for manipulating the tariffs of electricity, with a emphasis on US tariffs. A tariff is composed of various type of charges and credits, that fall into one of the following rate type:
 
  - *FIXED*: a fixed charge, generally expressed in $/day or $/month.
  - *ENERGY*: a charge per energy consumption, generally expressed in $/kWh. This charge may vary during the day, and may be different for each month.
@@ -8,26 +12,20 @@ The Bill Calculator tool intends to provide a generic tool for manipulating the 
 
 The tool aims to wrap up the complexity of the bill calculation, that can include Time Of Use energy, flat demand, Time Of Use demand, Peak Pricing Day charges, non-Peak Pricing Day credits, etc.
 
-The folder 'cost_calculator' contains the source code of the Bill Calculator. The rest of the README describes how to instanciate the main classes and their useful methods.
+### Packages installation
 
-## Add to PythonPath
+`pip install electricitycostcalculator`
 
-export PYTHONPATH=$PYTHONPATH:/path/to/git/repo
+### Packages dependency (oadr branch)
 
-## Packages dependency
-
-pandas, holidays, datetime, enum34 1.1.6, pytz, requests, lxml, xbos
-
-## Configuring
-
-Set PYTHONPATH to the root directory before running:
-$> export PYTHONPATH=$PYTHONPATH:/path/to/electricity-cost-calculator
+xbos
 
 # Bill Calculator creation
 
 In order to use the tool, one must instanciate the CostCalculator.
 
 ```python
+from electricitycostcalculator.cost_calculator.cost_calculator import CostCalculator
 billcalculator_obj = CostCalculator()
 ```
 
@@ -98,6 +96,7 @@ rate_tou=
 The TOU tariff object can then be instanciated. Let's assume this tariff is valid from 2017-01-01 to 2017-12-31.
 
 ```python
+  from electricitycostcalculator.cost_calculator.rate_structure import TouRateSchedule
   date_start = datetime(2017, 1, 1)
   date_end = datetime(2017, 12, 31)
   tariffObj = TouRateSchedule((date_start, date_end), rate_tou)
@@ -109,6 +108,7 @@ This packages provides a set of functions to pull utility tariffs from the OpenE
 The first step consists in creating an OpenEI_tariff that describes the tariff in use. Here is an example for PG&E A-10 TOU at the Secondary level:
 
 ```python
+  from electricitycostcalculator.openei_tariff.openei_tariff_analyzer import *
   openei_tariff_data = OpenEI_tariff(utility_id='14328', sector='Commercial', tariff_rate_of_interest='A-10', distrib_level_of_interest='Secondary', tou=True),
 ```
 The second step is to call the API:
@@ -121,13 +121,12 @@ This method processes the raw data coming from the API and select only the tarif
 The last step populates the CostCalculator object based on the OpenEI data:
 
 ```python
-  bill_calculator = CostCalculator()
   tariff_struct_from_openei_data(openei_tariff_data, bill_calculator)
 ```
 
 ### OpenEI tariff revision
 
-The data got from the OpenEI API might not be up-to-date or contain errors. In this case, the user might save the post-processed API call to a JSON file:
+The data retrieved from the OpenEI API might not be up-to-date or contain errors. In this case, the user might save the post-processed API call to a JSON file:
 
 ```python
   openei_tariff.call_api(store_as_json=True)
@@ -138,22 +137,29 @@ The user can then revise the blocks of the "tariff_yyyy.json" and save it to "ta
   tariff_openei_data.read_from_json()
 ```
 
+or specify explicitely another filename:
+
+
+```python
+  tariff_openei_data.read_from_json('filename.json')
+```
+
 # Bill Calculator methods
 
 ## Compute the bill
 
-Given a pandas dataframe 'data_meter' that maps date indexes to energy consumption (in Wh), the following method computes the bill linked to the encoded tariff:
+Given a Pandas DataFrame 'data_meter' that maps date indexes to energy consumption (in Wh), the following method computes the bill linked to the encoded tariff:
 
 ```python
   bill = bill_calculator.compute_bill(data_meter)
 ```
+
 The returned structure is a dictionary that maps a cost and a metric for each type of tariff. See the method signature for further details.
 
 Optional arguments can be specified:
 
- - 'column_data': select a specific column in the dataframe. Leave it when the dataframe only contains one column.
+ - 'column_data': select a specific column in the dataframe. Leave it empty when the dataframe only contains one column.
  - 'monthly_detailed': False by default, assuming that the billing period spans over the whole dataframe. Set if to True to map a bill for each month in the dataframe.
-
 
 ## Get the prices signal over a period
 
@@ -167,7 +173,9 @@ The following method generates a pandas dataframe mapping the dates in 'date_ran
 
 # OpenEI test file
 
-`python openei_test.py`
+```cd example/
+python openei_test.py
+```
 
 This outputs the bill linked to an energy meter of a building, given a specific tariff. 
 
