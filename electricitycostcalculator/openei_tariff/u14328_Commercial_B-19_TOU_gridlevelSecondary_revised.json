@@ -1,7 +1,7 @@
 [
   {
-    label: "5e17b27c5457a3556573e3af",
-    revisions: [
+    "label": "5e17b27c5457a3556573e3af",
+    "revisions": [
     {
       "date": "2020-01-09T16:08:44.000Z",
       "userid": 27111,
@@ -14,62 +14,61 @@
       "date": "2020-01-09T17:13:59.000Z",
       "userid": 27111,
     },
-    approved: false,
-    utility: Pacific Gas & Electric Co,
-    eiaid: 14328,
-    name: B-19 Medium General Demand TOU (Secondary),
-    startdate: "2020-01-01T00:00:00.000Z",
-    startdate: "2020-12-31T23:59:59.000Z",
-    supersedes: "5e17b0445457a3587f73e3b1",
-    sector: Commercial,
-    servicetype: Bundled,
-    description: Ongoing daily Time-of-Use (TOU) meter charges applicable to customers taking voluntary TOU service under this rate schedule will no longer be applied if the customer  has a SmartMeter™ installed. Peak Day Pricing Rates are applicable to customers taking this rate. A maximum of fifteen (15) PDP events and a minimum of nine (9) PDP events may be called in any calendar year. A customer must take service under Schedule E-19 if: (1) the customers load does not meet the Schedule E-20 requirements, but, (2) the customers maximum billing demand has exceeded 499 kilowatts for at least three consecutive months during the most recent 12-month period. If a customers maximum demand has failed to exceed 499 kilowatts for 12 consecutive months, PG&E will transfer that customers account to voluntary E-19 service or to a different applicable rate schedule. After
-being placed on this schedule due to the 200 kW or greater provisions of this schedule, customers who fail to exceed 199 kilowatts for 12 consecutive months may elect to stay on the time-of-use provisions of this schedule or alternate time-of-use rate schedule.,
-    source: http://www.pge.com/tariffs/tm2/pdf/ELEC_SCHEDS_E-19.pdf,
-    sourceparent: http://www.pge.com/tariffs/ERS.SHTML,
-    basicinformationcomments: The fixed monthly charge include the customer charge mandatory ($19.71253*365/12). Customer charge voluntary -with smartmeter ($4.59959 *365/12),
-    peakkwcapacitymin: 500,
-    peakkwcapacitymax: 999,
-    demandUnits: kW,
-    voltagecategory: Secondary,
-    flatdemandunit: kW,
-    flatdemandstructure: [
+    "approved": false,
+    "utility": "Pacific Gas & Electric Co",
+    "eiaid": 14328,
+    "name": "B-19 Medium General Demand TOU (Secondary)",
+    "startdate": "2020-01-01T00:00:00.000Z",
+    "enddate": "2020-12-31T23:59:59.000Z",
+    "supersedes": "5e17b0445457a3587f73e3b1",
+    "sector": "Commercial",
+    "servicetype": "Bundled",
+    "description": "Ongoing daily Time-of-Use (TOU) meter charges applicable to customers taking voluntary TOU service under this rate schedule will no longer be applied if the customer  has a SmartMeter™ installed. Peak Day Pricing Rates are applicable to customers taking this rate. A maximum of fifteen (15) PDP events and a minimum of nine (9) PDP events may be called in any calendar year. A customer must take service under Schedule E-19 if: (1) the customers load does not meet the Schedule E-20 requirements, but, (2) the customers maximum billing demand has exceeded 499 kilowatts for at least three consecutive months during the most recent 12-month period. If a customers maximum demand has failed to exceed 499 kilowatts for 12 consecutive months, PG&E will transfer that customers account to voluntary E-19 service or to a different applicable rate schedule. After being placed on this schedule due to the 200 kW or greater provisions of this schedule, customers who fail to exceed 199 kilowatts for 12 consecutive months may elect to stay on the time-of-use provisions of this schedule or alternate time-of-use rate schedule.",
+    "source": "http://www.pge.com/tariffs/tm2/pdf/ELEC_SCHEDS_E-19.pdf",
+    "sourceparent": "http://www.pge.com/tariffs/ERS.SHTML",
+    "basicinformationcomments": "The fixed monthly charge include the customer charge mandatory ($19.71253*365/12). Customer charge voluntary -with smartmeter ($4.59959 *365/12)",
+    "peakkwcapacitymin": 500,
+    "peakkwcapacitymax": 999,
+    "demandUnits": "kW",
+    "voltagecategory": "Secondary",
+    "flatdemandunit": "kW",
+    "flatdemandstructure": [
       [
         {
-          rate: 21.08,
+          "rate": 21.08,
         },
       ],
       [
         {
-          rate: 21.08,
-        },
-      ],
-    ],
-    flatdemandmonths: [0,0,0,0,1,1,1,1,1,1,0,0],
-    demandrateunit: kW,
-    demandratestructure: [
-      [
-        {
-          rate: 0,
-        },
-      ],
-      [
-        {
-          rate: 1.79,
-        },
-      ],
-      [
-        {
-          rate: 5.23,
-        },
-      ],
-      [
-        {
-          rate: 25.58,
+          "rate": 21.08,
         },
       ],
     ],
-    demandweekdayschedule: [
+    "flatdemandmonths": [0,0,0,0,1,1,1,1,1,1,0,0],
+    "demandrateunit": "kW",
+    "demandratestructure": [
+      [
+        {
+          "rate": 0,
+        },
+      ],
+      [
+        {
+          "rate": 1.79,
+        },
+      ],
+      [
+        {
+          "rate": 5.23,
+        },
+      ],
+      [
+        {
+          "rate": 25.58,
+        },
+      ],
+    ],
+    "demandweekdayschedule": [
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
@@ -83,7 +82,7 @@ being placed on this schedule due to the 200 kW or greater provisions of this sc
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       ]
-    demandweekendschedule: [
+    "demandweekendschedule": [
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
@@ -97,65 +96,65 @@ being placed on this schedule due to the 200 kW or greater provisions of this sc
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
       ]
-    demandattrs: [
+    "demandattrs": [
       {
-        Power-Factor-Adjustment-Rate-$: 0.00005,
+        "Power-Factor-Adjustment-Rate-$": 0.00005,
       },
       {
-        TOU-winter:Maximum Part-Peak Demand: 2,
+        "TOU-winter:Maximum Part-Peak Demand": 2,
       },
       {
-        TOU-summer:Maximum Part-Peak Demand  : 3,
+        "TOU-summer:Maximum Part-Peak Demand": 3,
       },
       {
-        TOU-summer:Maximum Peak Demand : 4,
+        "TOU-summer:Maximum Peak Demand": 4,
       },
       {
-        TOU-winter:Off-Peak: 1,
+        "TOU-winter:Off-Peak": 1,
       },
       {
-        TOU-summer:Off-Peak: 1,
+        "TOU-summer:Off-Peak": 1,
       },
     ],
-    energyratestructure: [
+    "energyratestructure": [
       [
         {
-          unit: kWh,
-          rate: 0.0683,
+          "unit": "kWh",
+          "rate": 0.0683,
         },
       ],
       [
         {
-          unit: kWh,
-          rate: 0.1115,
+          "unit": "kWh",
+          "rate": 0.1115,
         },
       ],
       [
         {
-          unit: kWh,
-          rate: 0.1438,
+          "unit": "kWh",
+          "rate": 0.1438,
         },
       ],
       [
         {
-          unit: kWh,
-          rate: 0.1116,
+          "unit": "kWh",
+          "rate": 0.1116,
         },
       ],
       [
         {
-          unit: kWh,
-          rate: 0.1328,
+          "unit": "kWh",
+          "rate": 0.1328,
         },
       ],
       [
         {
-          unit: kWh,
-          rate: 0.1629,
+          "unit": "kWh",
+          "rate": 0.1629,
         },
       ],
     ],
-    energyweekdayschedule: [
+    "energyweekdayschedule": [
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1],
       [1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,2,2,2,2,2,1,1,1],
@@ -169,7 +168,7 @@ being placed on this schedule due to the 200 kW or greater provisions of this sc
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
       ]
-    energyweekendschedule: [
+    "energyweekendschedule": [
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1],
       [1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,2,2,2,2,2,1,1,1],
@@ -183,28 +182,28 @@ being placed on this schedule due to the 200 kW or greater provisions of this sc
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1],
       ]
-    energyattrs: [
+    "energyattrs": [
       {
-        TOU-winter:Off-Peak: 2,
+        "TOU-winter:Off-Peak": 2,
       },
       {
-        TOU-winter:On-Peak: 3,
+        "TOU-winter:On-Peak": 3,
       },
       {
-        TOU-summer:Off-Peak : 4,
+        "TOU-summer:Off-Peak": 4,
       },
       {
-        TOU-summer:Part-Peak : 5,
+        "TOU-summer:Part-Peak": 5,
       },
       {
-        TOU-summer:Peak : 6,
+        "TOU-summer:Peak": 6,
       },
       {
-        TOU-winter:Super-Off-Peak: 1,
+        "TOU-winter:Super-Off-Peak": 1,
       },
     ],
-    dgRules: Net Metering,
-    fixedchargefirstmeter: 23.655,
-    fixedchargeunits: $/day,
+    "dgRules": "Net Metering",
+    "fixedchargefirstmeter": 23.655,
+    "fixedchargeunits": "$/day",
   },
 ],
